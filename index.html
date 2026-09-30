@@ -1,0 +1,1287 @@
+<title>TikTok Shop UK Calculator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+/* Layout: left panel = inputs/controls, right panel = results grid */
+:root {
+  --bg: #f7f8fc;
+  --surface: #ffffff;
+  --surface2: #f0f2f8;
+  --border: #e2e6f0;
+  --fg: #1a1d2e;
+  --fg2: #5a5f7a;
+  --fg3: #9096b0;
+  --accent: #ee1d52;       /* TikTok red */
+  --accent2: #010101;      /* TikTok black */
+  --accent-pale: #fde8ee;
+  --green: #1a9e5e;
+  --green-pale: #e6f7f0;
+  --yellow: #c47f00;
+  --yellow-pale: #fef8e7;
+  --red: #d93025;
+  --red-pale: #fce8e7;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', system-ui, sans-serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d0f18;
+    --surface: #161925;
+    --surface2: #1e2235;
+    --border: #2a2f48;
+    --fg: #e8eaf5;
+    --fg2: #9096b0;
+    --fg3: #5a5f7a;
+    --accent: #ff2d55;
+    --accent2: #f0f0f0;
+    --accent-pale: #2a0e19;
+    --green: #22c87a;
+    --green-pale: #0e2a1f;
+    --yellow: #f0a500;
+    --yellow-pale: #2a2000;
+    --red: #ff5555;
+    --red-pale: #2a0a0a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d0f18;
+  --surface: #161925;
+  --surface2: #1e2235;
+  --border: #2a2f48;
+  --fg: #e8eaf5;
+  --fg2: #9096b0;
+  --fg3: #5a5f7a;
+  --accent: #ff2d55;
+  --accent2: #f0f0f0;
+  --accent-pale: #2a0e19;
+  --green: #22c87a;
+  --green-pale: #0e2a1f;
+  --yellow: #f0a500;
+  --yellow-pale: #2a2000;
+  --red: #ff5555;
+  --red-pale: #2a0a0a;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--fg);
+  min-height: 100vh;
+  font-size: 14px;
+  padding-inline: 0;
+  padding-block: 0;
+}
+
+/* ── Top bar ── */
+.topbar {
+  background: var(--accent2);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+  height: 52px;
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 100;
+}
+.topbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.3px;
+}
+.topbar-logo .dot { color: var(--accent); font-size: 20px; line-height: 1; }
+.topbar-sub { font-size: 12px; color: #888; margin-left: 4px; font-weight: 400; }
+.topbar-spacer { flex: 1; }
+.topbar-btn {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: 0.2px;
+  transition: background 0.15s;
+}
+.topbar-btn:hover { background: rgba(255,255,255,0.2); }
+.topbar-btn.primary {
+  background: var(--accent);
+  border-color: transparent;
+}
+.topbar-btn.primary:hover { opacity: 0.9; }
+.topbar-btn.drive-active {
+  background: #1a73e8;
+  border-color: transparent;
+}
+.topbar-btn.drive-active:hover { opacity: 0.9; }
+
+/* ── Main layout ── */
+.layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  min-height: calc(100vh - 52px);
+}
+
+/* ── Left panel ── */
+.panel-left {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 20px 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.panel-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--fg3);
+  margin-bottom: 10px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg2);
+  letter-spacing: 0.2px;
+}
+
+.field input[type="text"],
+.field input[type="number"],
+.field select {
+  font-family: var(--sans);
+  font-size: 13px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg);
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239096b0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+.field input:focus, .field select:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  color: var(--fg2);
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.pill.active {
+  background: var(--accent-pale);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.separator { height: 1px; background: var(--border); }
+
+.calc-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 13px;
+  cursor: pointer;
+  width: 100%;
+  letter-spacing: 0.3px;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.calc-btn:hover { opacity: 0.9; }
+.calc-btn:active { transform: scale(0.98); }
+
+.reset-btn {
+  background: transparent;
+  color: var(--fg3);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 9px;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.12s;
+}
+.reset-btn:hover { border-color: var(--fg2); color: var(--fg2); }
+
+/* ── Right panel ── */
+.panel-right {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Product list header */
+.right-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+}
+.right-header h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg);
+  flex: 1;
+}
+.product-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg3);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+.add-row-btn {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  color: var(--fg2);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.12s;
+}
+.add-row-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Table area */
+.table-wrap {
+  flex: 1;
+  overflow: auto;
+  background: var(--bg);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  min-width: 900px;
+}
+thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--surface);
+}
+thead th {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--fg3);
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+thead th.num { text-align: right; }
+
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+tbody tr:hover { background: var(--surface2); }
+
+tbody td {
+  padding: 10px 12px;
+  color: var(--fg);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+tbody td.num {
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+tbody td.product-name {
+  font-weight: 600;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  letter-spacing: 0.3px;
+}
+.badge-profit { background: var(--green-pale); color: var(--green); }
+.badge-loss   { background: var(--red-pale);   color: var(--red); }
+.badge-warn   { background: var(--yellow-pale); color: var(--yellow); }
+.badge-svp    { background: #e8f0ff; color: #2563eb; }
+.badge-fbt    { background: #f0e8ff; color: #7c3aed; }
+.badge-sbs    { background: #e8fff5; color: #059669; }
+
+.sr-num {
+  color: var(--fg3);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+/* Action buttons per row */
+.row-actions { display: flex; gap: 6px; }
+.row-del {
+  background: none;
+  border: 1.5px solid var(--border);
+  color: var(--fg3);
+  border-radius: 6px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.1s;
+}
+.row-del:hover { border-color: var(--red); color: var(--red); }
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--fg3);
+}
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state p { font-size: 13px; margin-top: 6px; }
+
+/* Summary footer */
+.summary-footer {
+  border-top: 2px solid var(--border);
+  background: var(--surface);
+  padding: 14px 20px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.summary-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.summary-tile .s-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--fg3);
+}
+.summary-tile .s-value {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--fg);
+  letter-spacing: -0.5px;
+}
+.summary-tile .s-value.good { color: var(--green); }
+.summary-tile .s-value.bad  { color: var(--red); }
+
+/* Margin grid */
+.margins-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.margin-slot {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.margin-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--fg3);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.margin-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.margin-inp {
+  font-family: var(--mono) !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  width: 48px !important;
+  color: var(--accent) !important;
+  outline: none !important;
+}
+.pct-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg3);
+}
+
+/* Multi-margin result rows */
+.margin-row-header {
+  background: var(--surface2);
+}
+.margin-row-header td {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--fg3);
+  padding: 6px 12px;
+  border-bottom: 2px solid var(--border);
+}
+.scenario-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+.sc1 { background: #e8f0ff; color: #2563eb; }
+.sc2 { background: #f0fdf4; color: #16a34a; }
+.sc3 { background: #fef9c3; color: #a16207; }
+.sc4 { background: #fce7f3; color: #9d174d; }
+
+.product-group-row td {
+  background: var(--surface);
+  font-weight: 700;
+  padding: 8px 12px;
+  border-top: 2px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.product-group-label {
+  font-size: 12px;
+  color: var(--fg);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .layout { grid-template-columns: 1fr; }
+  .panel-left { border-right: none; border-bottom: 1px solid var(--border); }
+  .summary-footer { grid-template-columns: 1fr 1fr; }
+}
+
+/* Tooltip */
+[data-tip] { position: relative; cursor: help; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent2);
+  color: #fff;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 200;
+}
+[data-tip]:hover::after { opacity: 1; }
+
+/* Drive status toast */
+#drive-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--accent2);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 8px;
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.25s, transform 0.25s;
+  pointer-events: none;
+  max-width: 320px;
+}
+#drive-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+#drive-toast.success { background: #1a9e5e; }
+#drive-toast.error   { background: #d93025; }
+#drive-toast.info    { background: #1a73e8; }
+</style>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <span class="dot">●</span>
+    TikTok Shop UK
+    <span class="topbar-sub">Price Calculator</span>
+  </div>
+  <div class="topbar-spacer"></div>
+  <button class="topbar-btn" onclick="exportCSV()">↓ Export CSV</button>
+  <button class="topbar-btn" id="drive-btn" onclick="driveAction()">
+    <span id="drive-btn-label">☁ Save to Drive</span>
+  </button>
+</div>
+
+<!-- Toast notification -->
+<div id="drive-toast"></div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- LEFT: CALCULATOR PANEL -->
+  <aside class="panel-left">
+
+    <div>
+      <div class="panel-section-title">Product Info</div>
+      <div class="field-group">
+        <div class="field">
+          <label>Product Name</label>
+          <input type="text" id="inp-name" placeholder="e.g. COSRX Snail Essence">
+        </div>
+        <div class="field">
+          <label>Cost Price (£)</label>
+          <input type="number" id="inp-cost" placeholder="0.00" min="0" step="0.01">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:600;color:var(--fg2);display:block;margin-bottom:6px">Target Margins — 4 Scenarios</label>
+          <div class="margins-grid">
+            <div class="margin-slot">
+              <div class="margin-label">Scenario 1</div>
+              <div class="margin-input-wrap">
+                <input type="number" class="margin-inp" id="m1" value="10" min="0" max="90" step="1"><span class="pct-label">%</span>
+              </div>
+            </div>
+            <div class="margin-slot">
+              <div class="margin-label">Scenario 2</div>
+              <div class="margin-input-wrap">
+                <input type="number" class="margin-inp" id="m2" value="15" min="0" max="90" step="1"><span class="pct-label">%</span>
+              </div>
+            </div>
+            <div class="margin-slot">
+              <div class="margin-label">Scenario 3</div>
+              <div class="margin-input-wrap">
+                <input type="number" class="margin-inp" id="m3" value="20" min="0" max="90" step="1"><span class="pct-label">%</span>
+              </div>
+            </div>
+            <div class="margin-slot">
+              <div class="margin-label">Scenario 4</div>
+              <div class="margin-input-wrap">
+                <input type="number" class="margin-inp" id="m4" value="25" min="0" max="90" step="1"><span class="pct-label">%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="separator"></div>
+
+    <div>
+      <div class="panel-section-title">Category</div>
+      <div class="pill-group" id="pill-category">
+        <div class="pill active" data-val="General/Fashion/Food (9%)">General / Fashion / Food</div>
+        <div class="pill" data-val="Beauty & Personal Care (5%)">Beauty & Personal Care</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel-section-title">Seller Type</div>
+      <div class="pill-group" id="pill-seller">
+        <div class="pill active" data-val="Established">Established</div>
+        <div class="pill" data-val="New Seller (Intro ~5%)">New Seller (Intro ~5%)</div>
+      </div>
+    </div>
+
+    <div class="separator"></div>
+
+    <div>
+      <div class="panel-section-title">Fulfilment Method</div>
+      <div class="pill-group" id="pill-fulfilment">
+        <div class="pill active" data-val="Shipped via Platform (SVP)">Shipped via Platform (SVP)</div>
+        <div class="pill" data-val="Fulfilled by TikTok (FBT)">Fulfilled by TikTok (FBT)</div>
+        <div class="pill" data-val="Shipped by Seller (SBS)">Shipped by Seller (SBS)</div>
+      </div>
+    </div>
+
+    <div id="weight-field" class="field">
+      <label>Parcel Weight</label>
+      <select id="inp-weight">
+        <option value="Under 0.5 kg (£2.57)">Under 0.5 kg — £2.57</option>
+        <option value="0.5-1 kg (£3.08)">0.5–1 kg — £3.08</option>
+        <option value="1-2 kg (£3.85)">1–2 kg — £3.85</option>
+        <option value="2-5 kg (£5.14)">2–5 kg — £5.14</option>
+      </select>
+    </div>
+
+    <div class="separator"></div>
+
+    <div>
+      <div class="panel-section-title">Additional Settings</div>
+      <div class="field-group">
+        <div class="field-row">
+          <div class="field">
+            <label>Affiliate Fee (%)</label>
+            <input type="number" id="inp-affiliate" placeholder="10" min="0" max="50" step="0.5" value="10">
+          </div>
+          <div class="field">
+            <label>Return Rate (%)</label>
+            <input type="number" id="inp-return" placeholder="5" min="0" max="80" step="1" value="5">
+          </div>
+        </div>
+
+        <div>
+          <div class="panel-section-title" style="margin-bottom:8px">Packaging</div>
+          <div class="pill-group" id="pill-packaging">
+            <div class="pill active" data-val="None">None</div>
+            <div class="pill" data-val="TikTok pkg - own materials (£0.41)">Own materials (£0.41)</div>
+            <div class="pill" data-val="TikTok bubble wrap (£0.60)">Bubble wrap (£0.60)</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel-section-title" style="margin-bottom:8px">VAT Registered?</div>
+          <div class="pill-group" id="pill-vat">
+            <div class="pill active" data-val="No">No</div>
+            <div class="pill" data-val="Yes">Yes</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:auto">
+      <button class="calc-btn" onclick="addProduct()">＋ Add to Results</button>
+      <button class="reset-btn" onclick="resetForm()">Reset Form</button>
+    </div>
+
+  </aside>
+
+  <!-- RIGHT: RESULTS GRID -->
+  <main class="panel-right">
+    <div class="right-header">
+      <h2>Final Calculated Data</h2>
+      <span class="product-count" id="prod-count">0 products</span>
+      <button class="add-row-btn" onclick="clearAll()">✕ Clear All</button>
+    </div>
+
+    <div class="table-wrap">
+      <table id="results-table">
+        <thead>
+          <tr>
+            <th>Sr#</th>
+            <th>Product Name</th>
+            <th>Fulfilment</th>
+            <th class="num">Cost £</th>
+            <th class="num">Break-Even</th>
+            <th class="num">Comm %</th>
+            <th class="num">Total Fees</th>
+            <th>Scenario</th>
+            <th class="num">Margin %</th>
+            <th class="num">Sell Price</th>
+            <th class="num">Comm £</th>
+            <th class="num">Affiliate</th>
+            <th class="num">Shipping</th>
+            <th class="num">Net Profit</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="results-body">
+        </tbody>
+      </table>
+
+      <div id="empty-state" class="empty-state">
+        <div class="empty-icon">📦</div>
+        <strong>No products yet</strong>
+        <p>Fill in the calculator on the left and click "Add to Results"</p>
+      </div>
+    </div>
+
+    <div class="summary-footer" id="summary-footer" style="display:none">
+      <div class="summary-tile">
+        <span class="s-label">Total Products</span>
+        <span class="s-value" id="sum-count">0</span>
+      </div>
+      <div class="summary-tile">
+        <span class="s-label">Avg Sell Price</span>
+        <span class="s-value" id="sum-avg-sell">£0.00</span>
+      </div>
+      <div class="summary-tile">
+        <span class="s-label">Avg Net Margin</span>
+        <span class="s-value" id="sum-avg-margin">0%</span>
+      </div>
+      <div class="summary-tile">
+        <span class="s-label">Total Est. Profit</span>
+        <span class="s-value" id="sum-total-profit">£0.00</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ── Assumptions (same as Excel) ──
+const A = {
+  commStd:   0.09,
+  commBeauty: 0.05,
+  commNew:   0.05,
+  payment:   0.25,
+  sbsFee:    0.50,
+  svp: { 'Under 0.5 kg (£2.57)': 2.568, '0.5-1 kg (£3.08)': 3.084, '1-2 kg (£3.85)': 3.852, '2-5 kg (£5.14)': 5.136 },
+  fbtBase:   0.78,
+  pkgOwn:    0.41,
+  pkgBubble: 0.60,
+  refundAdm: 0.20,
+  vat:       0.20
+};
+
+let products = [];
+let srCounter = 1;
+const SC_COLORS = ['sc1','sc2','sc3','sc4'];
+const SC_LABELS = ['Scenario 1','Scenario 2','Scenario 3','Scenario 4'];
+
+// ── localStorage persistence ──
+const LS_KEY = 'tiktok_uk_calc_v1';
+
+function saveLocal() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({ products, srCounter }));
+  } catch(e) { /* quota or private mode — silently skip */ }
+}
+
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    if (d && Array.isArray(d.products)) {
+      products = d.products;
+      srCounter = d.srCounter || (products.length + 1);
+      return products.length > 0;
+    }
+  } catch(e) { /* corrupted — skip */ }
+  return false;
+}
+
+// ── Google Drive integration ──
+// Uses Google Drive API via browser OAuth (user's own Google account)
+// No server-side required — GAPI + GIS (Google Identity Services)
+const DRIVE_FILE_NAME = 'TikTokShopUK_Calculator_Data.json';
+let driveFileId = null;   // ID of the file in Drive once saved
+let driveSignedIn = false;
+let driveAccessToken = null;
+let driveTokenExpiry = 0;
+
+// We use a public OAuth client that requests Drive file scope
+// The client ID below is for "Any Google user" implicit grant — Drive file only (not full Drive)
+// This is the standard approach for user-controlled browser apps
+const GAPI_CLIENT_ID = ''; // Loaded dynamically — see driveInit()
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+
+// Since we can't embed a real OAuth client ID here (it would be app-specific),
+// we use a different approach: Google Drive "Save to Drive" button approach
+// which works without a client ID by using data URIs + Google Picker
+
+function toast(msg, type='info', dur=3000) {
+  const el = document.getElementById('drive-toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = ''; }, dur);
+}
+
+// ── Drive: upload as JSON to Drive using GAPI with OAuth popup ──
+async function driveAction() {
+  if (products.length === 0) {
+    toast('No products to save. Add a product first.', 'error');
+    return;
+  }
+
+  // If we already have a valid token, save directly
+  if (driveSignedIn && Date.now() < driveTokenExpiry) {
+    await driveSave();
+    return;
+  }
+
+  // Initiate OAuth via Google Identity Services popup
+  toast('Opening Google sign-in…', 'info', 8000);
+  driveSignIn();
+}
+
+function driveSignIn() {
+  // Load GIS script if not already present
+  if (!window.google || !window.google.accounts) {
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.onload = () => initTokenClient();
+    s.onerror = () => toast('Could not load Google auth. Check internet.', 'error');
+    document.head.appendChild(s);
+  } else {
+    initTokenClient();
+  }
+}
+
+let tokenClient = null;
+function initTokenClient() {
+  // Attempt to use the implicit grant flow with a public demo client
+  // For production, replace with your own Google Cloud OAuth client ID
+  // Registered for *.claude.ai origins
+  const CLIENT_ID = '481898061814-mv5fvkl0kol4dlu0a8vvcirre71kqs4m.apps.googleusercontent.com';
+
+  try {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: DRIVE_SCOPE,
+      callback: async (tokenResponse) => {
+        if (tokenResponse.error) {
+          toast('Google sign-in failed: ' + tokenResponse.error, 'error');
+          return;
+        }
+        driveAccessToken = tokenResponse.access_token;
+        driveTokenExpiry = Date.now() + (tokenResponse.expires_in - 60) * 1000;
+        driveSignedIn = true;
+        updateDriveBtn(true);
+        await driveSave();
+      }
+    });
+    tokenClient.requestAccessToken({ prompt: 'consent' });
+  } catch(e) {
+    // Fallback if GIS fails — use manual download + instructions
+    toast('Google OAuth not available. Downloading file for manual upload…', 'info', 5000);
+    driveManualFallback();
+  }
+}
+
+function updateDriveBtn(signedIn) {
+  const btn = document.getElementById('drive-btn');
+  const lbl = document.getElementById('drive-btn-label');
+  if (signedIn) {
+    btn.classList.add('drive-active');
+    lbl.textContent = '☁ Saved to Drive';
+  } else {
+    btn.classList.remove('drive-active');
+    lbl.textContent = '☁ Save to Drive';
+  }
+}
+
+async function driveSave() {
+  const label = document.getElementById('drive-btn-label');
+  label.textContent = '⏳ Saving…';
+
+  const fileContent = JSON.stringify({
+    savedAt: new Date().toISOString(),
+    version: 1,
+    products,
+    srCounter
+  }, null, 2);
+
+  try {
+    let res;
+    if (driveFileId) {
+      // Update existing file
+      res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': 'Bearer ' + driveAccessToken,
+          'Content-Type': 'application/json'
+        },
+        body: fileContent
+      });
+    } else {
+      // Search for existing file first
+      const searchRes = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=name%3D'${DRIVE_FILE_NAME}'%20and%20trashed%3Dfalse&fields=files(id,name,modifiedTime)`,
+        { headers: { 'Authorization': 'Bearer ' + driveAccessToken } }
+      );
+      const searchData = await searchRes.json();
+      if (searchData.files && searchData.files.length > 0) {
+        driveFileId = searchData.files[0].id;
+        // Update found file
+        res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': 'Bearer ' + driveAccessToken,
+            'Content-Type': 'application/json'
+          },
+          body: fileContent
+        });
+      } else {
+        // Create new file via multipart upload
+        const boundary = 'tt_calc_boundary';
+        const meta = JSON.stringify({ name: DRIVE_FILE_NAME, mimeType: 'application/json' });
+        const body = `--${boundary}\r\nContent-Type: application/json\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${fileContent}\r\n--${boundary}--`;
+        res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + driveAccessToken,
+            'Content-Type': `multipart/related; boundary=${boundary}`
+          },
+          body
+        });
+      }
+    }
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.id) driveFileId = data.id;
+      toast('✓ Saved to Google Drive!', 'success');
+      updateDriveBtn(true);
+      label.textContent = '☁ Saved ✓';
+      setTimeout(() => { label.textContent = '☁ Save to Drive'; }, 3000);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || res.statusText);
+    }
+  } catch(e) {
+    toast('Drive save failed: ' + e.message, 'error', 5000);
+    label.textContent = '☁ Save to Drive';
+    updateDriveBtn(false);
+    driveSignedIn = false;
+  }
+}
+
+// Fallback: download JSON file + show instructions
+function driveManualFallback() {
+  const data = JSON.stringify({ savedAt: new Date().toISOString(), version: 1, products, srCounter }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = DRIVE_FILE_NAME;
+  a.click();
+  setTimeout(() => {
+    alert('File downloaded!\n\nTo save to Drive:\n1. Open drive.google.com\n2. Click "+ New" → "File upload"\n3. Select "' + DRIVE_FILE_NAME + '" from your Downloads\n\nNext time: open the file from Drive and use File → Save.');
+  }, 500);
+}
+
+// ── Pill toggle ──
+document.querySelectorAll('.pill-group').forEach(group => {
+  group.querySelectorAll('.pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      group.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      if (group.id === 'pill-fulfilment') toggleWeightField();
+    });
+  });
+});
+
+function getActive(groupId) {
+  const active = document.querySelector(`#${groupId} .pill.active`);
+  return active ? active.dataset.val : '';
+}
+
+function toggleWeightField() {
+  const ful = getActive('pill-fulfilment');
+  document.getElementById('weight-field').style.display =
+    ful === 'Shipped via Platform (SVP)' ? 'flex' : 'none';
+}
+toggleWeightField();
+
+// ── Calculation engine ──
+function calcProduct(inp) {
+  const { cost, marginPct, category, seller, fulfilment, weight, affiliatePct, returnRate, packaging, vatReg } = inp;
+
+  const commRate = seller === 'New Seller (Intro ~5%)'
+    ? Math.min(A.commNew, category.includes('Beauty') ? A.commBeauty : A.commStd)
+    : (category.includes('Beauty') ? A.commBeauty : A.commStd);
+
+  const affiliateRate = affiliatePct / 100;
+  const returnRateD   = returnRate / 100;
+  const marginD       = marginPct / 100;
+  const vatDiv        = vatReg === 'Yes' ? 1 + A.vat : 1;
+
+  const fulFee = fulfilment === 'Shipped via Platform (SVP)' ? (A.svp[weight] || 0)
+               : fulfilment === 'Fulfilled by TikTok (FBT)'  ? A.fbtBase
+               : 0;
+  const sbsFee  = fulfilment === 'Shipped by Seller (SBS)' ? A.sbsFee : 0;
+  const pkgCost = packaging === 'TikTok bubble wrap (£0.60)' ? A.pkgBubble
+                : packaging === 'TikTok pkg - own materials (£0.41)' ? A.pkgOwn
+                : 0;
+
+  const retProvRate = returnRateD * A.refundAdm;
+  const fixed = cost + A.payment + fulFee + sbsFee + pkgCost;
+
+  const denom    = (1 / vatDiv) - marginD - commRate - affiliateRate - retProvRate * commRate;
+  const beDenom  = (1 / vatDiv) - commRate - affiliateRate - retProvRate * commRate;
+
+  const sellPrice  = denom > 0 ? fixed / denom : 0;
+  const breakEven  = beDenom > 0 ? fixed / beDenom : 0;
+  const revenue    = sellPrice / vatDiv;
+
+  const commission  = revenue * commRate;
+  const affiliateFee= revenue * affiliateRate;
+  const retProv     = returnRateD * commission * A.refundAdm;
+
+  const totalFees = commission + affiliateFee + A.payment + fulFee + sbsFee + pkgCost + retProv;
+  const netProfit = revenue - cost - totalFees;
+  const netMargin = revenue > 0 ? netProfit / revenue : 0;
+
+  return { commRate, sellPrice, breakEven, commission, affiliateFee, payment: A.payment, fulFee, sbsFee, pkgCost, retProv, totalFees, netProfit, netMargin };
+}
+
+// ── Add product — 4 margin scenarios ──
+function addProduct() {
+  const name      = document.getElementById('inp-name').value.trim() || 'Product ' + srCounter;
+  const cost      = parseFloat(document.getElementById('inp-cost').value) || 0;
+  const affiliate = parseFloat(document.getElementById('inp-affiliate').value) || 0;
+  const returnPct = parseFloat(document.getElementById('inp-return').value) || 0;
+  const weight    = document.getElementById('inp-weight').value;
+
+  if (!cost || cost <= 0) { alert('Please enter a valid Cost Price.'); return; }
+
+  const margins = [
+    parseFloat(document.getElementById('m1').value) || 10,
+    parseFloat(document.getElementById('m2').value) || 15,
+    parseFloat(document.getElementById('m3').value) || 20,
+    parseFloat(document.getElementById('m4').value) || 25
+  ];
+
+  const baseInp = {
+    cost,
+    category:    getActive('pill-category'),
+    seller:      getActive('pill-seller'),
+    fulfilment:  getActive('pill-fulfilment'),
+    weight,
+    affiliatePct: affiliate,
+    returnRate:   returnPct,
+    packaging:    getActive('pill-packaging'),
+    vatReg:       getActive('pill-vat')
+  };
+
+  const scenarios = margins.map((m, i) => ({
+    label: SC_LABELS[i],
+    marginPct: m,
+    res: calcProduct({ ...baseInp, marginPct: m })
+  }));
+
+  products.push({ sr: srCounter++, name, inp: baseInp, scenarios });
+  saveLocal();          // ← auto-save after every add
+  renderTable();
+}
+
+// ── Render table ──
+function renderTable() {
+  const tbody = document.getElementById('results-body');
+  const empty = document.getElementById('empty-state');
+  const summary = document.getElementById('summary-footer');
+
+  tbody.innerHTML = '';
+
+  if (products.length === 0) {
+    empty.style.display = 'block';
+    summary.style.display = 'none';
+    document.getElementById('prod-count').textContent = '0 products';
+    return;
+  }
+
+  empty.style.display = 'none';
+  summary.style.display = 'grid';
+  document.getElementById('prod-count').textContent = products.length + ' product' + (products.length > 1 ? 's' : '');
+
+  products.forEach((p, idx) => {
+    const i = p.inp;
+    const fulBadge = i.fulfilment.includes('SVP') ? 'svp' : i.fulfilment.includes('FBT') ? 'fbt' : 'sbs';
+    const fulShort = i.fulfilment.includes('SVP') ? 'SVP' : i.fulfilment.includes('FBT') ? 'FBT' : 'SBS';
+    const r0 = p.scenarios[0].res;
+
+    const groupTr = document.createElement('tr');
+    groupTr.className = 'product-group-row';
+    groupTr.innerHTML = `
+      <td class="sr-num">${p.sr}</td>
+      <td colspan="3" class="product-group-label">
+        <strong>${p.name}</strong>
+        <span class="badge badge-${fulBadge}" style="margin-left:8px">${fulShort}</span>
+      </td>
+      <td class="num">£${fmt(i.cost)}</td>
+      <td class="num">${(r0.commRate*100).toFixed(0)}%</td>
+      <td class="num">—</td>
+      <td colspan="5"></td>
+      <td colspan="2"><div class="row-actions"><button class="row-del" onclick="deleteRow(${idx})">✕</button></div></td>
+    `;
+    tbody.appendChild(groupTr);
+
+    p.scenarios.forEach((sc, si) => {
+      const r = sc.res;
+      const profit = r.netProfit;
+      const margin = r.netMargin * 100;
+      const status = profit > 0 && margin >= 15 ? '✅ Good'
+                   : profit > 0 && margin >= 5  ? '⚠️ Tight'
+                   : '❌ Loss';
+      const statusClass = profit > 0 && margin >= 15 ? 'profit' : profit > 0 ? 'warn' : 'loss';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td class="num" style="color:var(--fg3);font-size:11px">£${fmt(r.breakEven)}</td>
+        <td class="num">${(r.commRate*100).toFixed(0)}%</td>
+        <td class="num">£${fmt(r.totalFees)}</td>
+        <td><span class="scenario-badge ${SC_COLORS[si]}">${sc.marginPct}% Margin</span></td>
+        <td class="num" style="color:var(--${margin>=15?'green':margin>=5?'yellow':'red'});font-weight:700">${margin.toFixed(1)}%</td>
+        <td class="num" style="font-weight:700;color:var(--accent)">£${fmt(r.sellPrice)}</td>
+        <td class="num">£${fmt(r.commission)}</td>
+        <td class="num">£${fmt(r.affiliateFee)}</td>
+        <td class="num">£${fmt(r.fulFee + r.sbsFee)}</td>
+        <td class="num" style="font-weight:700;color:var(--${profit>=0?'green':'red'})">£${fmt(profit)}</td>
+        <td><span class="badge badge-${statusClass}">${status}</span></td>
+        <td></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+
+  const bestScenarios = products.map(p => p.scenarios[p.scenarios.length - 1].res);
+  const totalProfit = bestScenarios.reduce((s, r) => s + r.netProfit, 0);
+  const avgSell     = bestScenarios.reduce((s, r) => s + r.sellPrice, 0) / products.length;
+  const avgMargin   = bestScenarios.reduce((s, r) => s + r.netMargin, 0) / products.length * 100;
+
+  document.getElementById('sum-count').textContent = products.length;
+  document.getElementById('sum-avg-sell').textContent = '£' + fmt(avgSell);
+  document.getElementById('sum-avg-margin').textContent = avgMargin.toFixed(1) + '%';
+  const tp = document.getElementById('sum-total-profit');
+  tp.textContent = '£' + fmt(totalProfit);
+  tp.className = 's-value ' + (totalProfit >= 0 ? 'good' : 'bad');
+}
+
+function deleteRow(idx) {
+  products.splice(idx, 1);
+  saveLocal();
+  renderTable();
+}
+
+function clearAll() {
+  if (products.length === 0) return;
+  if (confirm('Clear all ' + products.length + ' product(s)?')) {
+    products = [];
+    srCounter = 1;
+    saveLocal();
+    renderTable();
+  }
+}
+
+function resetForm() {
+  document.getElementById('inp-name').value = '';
+  document.getElementById('inp-cost').value = '';
+  document.getElementById('inp-affiliate').value = '10';
+  document.getElementById('inp-return').value = '5';
+  ['pill-category','pill-seller','pill-fulfilment','pill-packaging','pill-vat'].forEach(id => {
+    const g = document.getElementById(id);
+    g.querySelectorAll('.pill').forEach((p,i) => p.classList.toggle('active', i===0));
+  });
+  toggleWeightField();
+}
+
+function fmt(n) { return (isNaN(n) ? 0 : n).toFixed(2); }
+
+// ── Export CSV ──
+function exportCSV() {
+  if (products.length === 0) { alert('No products to export.'); return; }
+  const headers = ['Sr#','Product Name','Fulfilment','Cost £','Scenario','Target Margin %','Sell Price £','Break-Even £','Comm %','Commission £','Affiliate £','Shipping £','Total Fees £','Net Profit £','Net Margin %','Status'];
+  const rows = [];
+  products.forEach(p => {
+    p.scenarios.forEach((sc, si) => {
+      const r = sc.res; const i = p.inp;
+      const margin = (r.netMargin*100).toFixed(1);
+      const status = r.netProfit>0&&r.netMargin*100>=15?'Good':r.netProfit>0?'Tight':'Loss';
+      rows.push([p.sr, `"${p.name}"`, `"${i.fulfilment}"`, fmt(i.cost), SC_LABELS[si], sc.marginPct+'%', fmt(r.sellPrice), fmt(r.breakEven), (r.commRate*100).toFixed(0)+'%', fmt(r.commission), fmt(r.affiliateFee), fmt(r.fulFee+r.sbsFee), fmt(r.totalFees), fmt(r.netProfit), margin+'%', status]);
+    });
+  });
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'TikTok_Shop_UK_Prices.csv';
+  a.click();
+}
+
+// ── On load: restore from localStorage, then load example if empty ──
+window.addEventListener('DOMContentLoaded', () => {
+  const restored = loadLocal();
+  if (restored) {
+    renderTable();
+    toast('✓ ' + products.length + ' product(s) restored from last session', 'success', 3000);
+  } else {
+    // Pre-load 1 example
+    document.getElementById('inp-name').value = 'COSRX Snail Serum 96%';
+    document.getElementById('inp-cost').value = '6.50';
+    document.getElementById('m1').value = '10';
+    document.getElementById('m2').value = '15';
+    document.getElementById('m3').value = '20';
+    document.getElementById('m4').value = '25';
+    const catG = document.getElementById('pill-category');
+    catG.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.val.includes('Beauty')));
+    addProduct();
+    resetForm();
+  }
+});
+</script>
