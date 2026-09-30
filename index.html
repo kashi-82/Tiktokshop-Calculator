@@ -685,6 +685,17 @@ tbody td.product-name {
       </select>
     </div>
 
+    <div>
+      <div class="panel-section-title" style="margin-bottom:8px">Shipping Paid By</div>
+      <div class="pill-group" id="pill-shipping-payer">
+        <div class="pill active" data-val="Seller">Seller Pays 📦</div>
+        <div class="pill" data-val="Buyer">Buyer Pays 🛒</div>
+      </div>
+      <div id="buyer-shipping-note" style="display:none;margin-top:6px;font-size:11px;color:var(--green);font-weight:600;padding:6px 10px;background:var(--green-pale);border-radius:6px;">
+        ✓ Shipping excluded from your cost — buyer covers it separately
+      </div>
+    </div>
+
     <div class="separator"></div>
 
     <div>
@@ -751,6 +762,7 @@ tbody td.product-name {
             <th class="num">Sell Price</th>
             <th class="num">Comm £</th>
             <th class="num">Affiliate</th>
+            <th>Ship Paid By</th>
             <th class="num">Shipping</th>
             <th class="num">Net Profit</th>
             <th>Status</th>
@@ -1030,9 +1042,16 @@ document.querySelectorAll('.pill-group').forEach(group => {
       group.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
       pill.classList.add('active');
       if (group.id === 'pill-fulfilment') toggleWeightField();
+      if (group.id === 'pill-shipping-payer') toggleShippingPayer();
     });
   });
 });
+
+function toggleShippingPayer() {
+  const payer = getActive('pill-shipping-payer');
+  document.getElementById('buyer-shipping-note').style.display =
+    payer === 'Buyer' ? 'block' : 'none';
+}
 
 function getActive(groupId) {
   const active = document.querySelector(`#${groupId} .pill.active`);
@@ -1048,7 +1067,7 @@ toggleWeightField();
 
 // ── Calculation engine ──
 function calcProduct(inp) {
-  const { cost, marginPct, category, seller, fulfilment, weight, affiliatePct, returnRate, packaging, vatReg } = inp;
+  const { cost, marginPct, category, seller, fulfilment, weight, affiliatePct, returnRate, packaging, vatReg, shippingPayer } = inp;
 
   const commRate = seller === 'New Seller (Intro ~5%)'
     ? Math.min(A.commNew, category.includes('Beauty') ? A.commBeauty : A.commStd)
@@ -1059,10 +1078,18 @@ function calcProduct(inp) {
   const marginD       = marginPct / 100;
   const vatDiv        = vatReg === 'Yes' ? 1 + A.vat : 1;
 
-  const fulFee = fulfilment === 'Shipped via Platform (SVP)' ? (A.svp[weight] || 0)
-               : fulfilment === 'Fulfilled by TikTok (FBT)'  ? A.fbtBase
-               : 0;
-  const sbsFee  = fulfilment === 'Shipped by Seller (SBS)' ? A.sbsFee : 0;
+  // If buyer pays shipping → fulFee & sbsFee excluded from seller's cost
+  const buyerPaysShipping = shippingPayer === 'Buyer';
+
+  const fulFeeActual = fulfilment === 'Shipped via Platform (SVP)' ? (A.svp[weight] || 0)
+                     : fulfilment === 'Fulfilled by TikTok (FBT)'  ? A.fbtBase
+                     : 0;
+  const sbsFeeActual  = fulfilment === 'Shipped by Seller (SBS)' ? A.sbsFee : 0;
+
+  // Only charge seller if seller pays; if buyer pays → 0 in seller's calc
+  const fulFee = buyerPaysShipping ? 0 : fulFeeActual;
+  const sbsFee = buyerPaysShipping ? 0 : sbsFeeActual;
+
   const pkgCost = packaging === 'TikTok bubble wrap (£0.60)' ? A.pkgBubble
                 : packaging === 'TikTok pkg - own materials (£0.41)' ? A.pkgOwn
                 : 0;
@@ -1107,14 +1134,15 @@ function addProduct() {
 
   const baseInp = {
     cost,
-    category:    getActive('pill-category'),
-    seller:      getActive('pill-seller'),
-    fulfilment:  getActive('pill-fulfilment'),
+    category:      getActive('pill-category'),
+    seller:        getActive('pill-seller'),
+    fulfilment:    getActive('pill-fulfilment'),
     weight,
-    affiliatePct: affiliate,
-    returnRate:   returnPct,
-    packaging:    getActive('pill-packaging'),
-    vatReg:       getActive('pill-vat')
+    affiliatePct:  affiliate,
+    returnRate:    returnPct,
+    packaging:     getActive('pill-packaging'),
+    vatReg:        getActive('pill-vat'),
+    shippingPayer: getActive('pill-shipping-payer')
   };
 
   const scenarios = margins.map((m, i) => ({
@@ -1192,7 +1220,8 @@ function renderTable() {
         <td class="num" style="font-weight:700;color:var(--accent)">£${fmt(r.sellPrice)}</td>
         <td class="num">£${fmt(r.commission)}</td>
         <td class="num">£${fmt(r.affiliateFee)}</td>
-        <td class="num">£${fmt(r.fulFee + r.sbsFee)}</td>
+        <td><span class="badge ${i.shippingPayer==='Buyer'?'badge-profit':'badge-svp'}">${i.shippingPayer==='Buyer'?'🛒 Buyer':'📦 Seller'}</span></td>
+        <td class="num">${i.shippingPayer==='Buyer'?'<span style="color:var(--green)">—</span>':'£'+fmt(r.fulFee + r.sbsFee)}</td>
         <td class="num" style="font-weight:700;color:var(--${profit>=0?'green':'red'})">£${fmt(profit)}</td>
         <td><span class="badge badge-${statusClass}">${status}</span></td>
         <td></td>
@@ -1235,11 +1264,12 @@ function resetForm() {
   document.getElementById('inp-cost').value = '';
   document.getElementById('inp-affiliate').value = '10';
   document.getElementById('inp-return').value = '5';
-  ['pill-category','pill-seller','pill-fulfilment','pill-packaging','pill-vat'].forEach(id => {
+  ['pill-category','pill-seller','pill-fulfilment','pill-packaging','pill-vat','pill-shipping-payer'].forEach(id => {
     const g = document.getElementById(id);
     g.querySelectorAll('.pill').forEach((p,i) => p.classList.toggle('active', i===0));
   });
   toggleWeightField();
+  toggleShippingPayer();
 }
 
 function fmt(n) { return (isNaN(n) ? 0 : n).toFixed(2); }
