@@ -131,7 +131,12 @@ body {
 .layout {
   display: grid;
   grid-template-columns: 320px 1fr;
-  min-height: calc(100vh - 52px);
+  height: calc(100vh - 52px);
+  overflow: hidden;
+  transition: grid-template-columns 0.25s ease;
+}
+.layout.collapsed {
+  grid-template-columns: 0px 1fr;
 }
 
 /* ── Left panel ── */
@@ -140,9 +145,45 @@ body {
   border-right: 1px solid var(--border);
   padding: 20px 18px;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 18px;
+  position: sticky;
+  top: 52px;
+  height: calc(100vh - 52px);
+  transition: padding 0.25s ease, opacity 0.2s ease;
+}
+.layout.collapsed .panel-left {
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Collapse toggle button ── */
+.collapse-btn {
+  position: fixed;
+  top: 62px;
+  left: 308px;
+  z-index: 200;
+  width: 24px;
+  height: 40px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg3);
+  font-size: 10px;
+  transition: left 0.25s ease, background 0.12s, color 0.12s;
+  box-shadow: 2px 0 6px rgba(0,0,0,0.06);
+}
+.collapse-btn:hover { background: var(--surface2); color: var(--accent); }
+.layout.collapsed + .collapse-btn,
+.collapse-btn.panel-collapsed {
+  left: 0px;
 }
 
 .panel-section-title {
@@ -268,6 +309,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  height: calc(100vh - 52px);
 }
 
 /* Product list header */
@@ -597,8 +639,11 @@ tbody td.product-name {
 <!-- Toast notification -->
 <div id="drive-toast"></div>
 
+<!-- Collapse toggle -->
+<button class="collapse-btn" id="collapse-btn" onclick="togglePanel()" title="Toggle panel">◀</button>
+
 <!-- LAYOUT -->
-<div class="layout">
+<div class="layout" id="main-layout">
 
   <!-- LEFT: CALCULATOR PANEL -->
   <aside class="panel-left">
@@ -824,6 +869,20 @@ let products = [];
 let srCounter = 1;
 const SC_COLORS = ['sc1','sc2','sc3','sc4'];
 const SC_LABELS = ['Scenario 1','Scenario 2','Scenario 3','Scenario 4'];
+
+// ── Panel collapse ──
+let panelCollapsed = false;
+function togglePanel() {
+  panelCollapsed = !panelCollapsed;
+  const layout = document.getElementById('main-layout');
+  const btn = document.getElementById('collapse-btn');
+  layout.classList.toggle('collapsed', panelCollapsed);
+  btn.classList.toggle('panel-collapsed', panelCollapsed);
+  btn.textContent = panelCollapsed ? '▶' : '◀';
+  btn.title = panelCollapsed ? 'Show calculator' : 'Hide calculator';
+  // Move button to edge
+  btn.style.left = panelCollapsed ? '0px' : '308px';
+}
 
 // ── localStorage persistence ──
 const LS_KEY = 'tiktok_uk_calc_v1';
