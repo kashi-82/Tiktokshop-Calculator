@@ -762,8 +762,11 @@ tbody td.product-name {
             <th class="num">Sell Price</th>
             <th class="num">Comm £</th>
             <th class="num">Affiliate</th>
+            <th class="num">Payment Fee</th>
             <th>Ship Paid By</th>
             <th class="num">Shipping</th>
+            <th class="num">Pkg</th>
+            <th class="num">Ret. Prov</th>
             <th class="num">Net Profit</th>
             <th>Status</th>
             <th></th>
@@ -1220,8 +1223,11 @@ function renderTable() {
         <td class="num" style="font-weight:700;color:var(--accent)">£${fmt(r.sellPrice)}</td>
         <td class="num">£${fmt(r.commission)}</td>
         <td class="num">£${fmt(r.affiliateFee)}</td>
+        <td class="num" data-tip="Payment processing £0.25/order">£${fmt(r.payment)}</td>
         <td><span class="badge ${i.shippingPayer==='Buyer'?'badge-profit':'badge-svp'}">${i.shippingPayer==='Buyer'?'🛒 Buyer':'📦 Seller'}</span></td>
         <td class="num">${i.shippingPayer==='Buyer'?'<span style="color:var(--green)">—</span>':'£'+fmt(r.fulFee + r.sbsFee)}</td>
+        <td class="num">${r.pkgCost > 0 ? '£'+fmt(r.pkgCost) : '<span style="color:var(--fg3)">—</span>'}</td>
+        <td class="num" data-tip="Return rate × commission × 20% refund admin">${r.retProv > 0 ? '£'+fmt(r.retProv) : '<span style="color:var(--fg3)">—</span>'}</td>
         <td class="num" style="font-weight:700;color:var(--${profit>=0?'green':'red'})">£${fmt(profit)}</td>
         <td><span class="badge badge-${statusClass}">${status}</span></td>
         <td></td>
