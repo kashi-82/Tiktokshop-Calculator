@@ -970,7 +970,15 @@ tbody td.product-name {
 // ── Supabase init ──
 const SUPABASE_URL  = 'https://ywhbrvgenmpdalqeedfp.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3aGJydmdlbm1wZGFscWVlZGZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4MzAxNDAsImV4cCI6MjEwNjQwNjE0MH0.oXKSHULHCNFR5KzmaVtpGkCvsIgiG5hvfRvcfxl_60Q';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: {
+    persistSession: true,
+    storageKey: 'tiktok_calc_auth',
+    storage: window.localStorage,
+    autoRefreshToken: true,
+    detectSessionInUrl: false
+  }
+});
 
 // Current session state
 let currentUser = null;
