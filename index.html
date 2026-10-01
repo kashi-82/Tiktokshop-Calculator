@@ -563,11 +563,85 @@ tbody td.product-name {
   color: var(--fg);
 }
 
-/* Responsive */
+/* ── Feedback button pulse animation ── */
+@keyframes feedback-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,45,85,0.5); border-color: rgba(255,45,85,0.6); }
+  50%       { box-shadow: 0 0 0 6px rgba(255,45,85,0); border-color: rgba(255,45,85,0.9); }
+}
+.feedback-topbar-btn {
+  animation: feedback-glow 2s ease-in-out infinite;
+  background: rgba(255,45,85,0.15) !important;
+  border-color: rgba(255,45,85,0.6) !important;
+  color: #ff6b87 !important;
+  position: relative;
+}
+.feedback-topbar-btn:hover {
+  background: rgba(255,45,85,0.3) !important;
+  animation: none;
+  box-shadow: none;
+}
+
+/* ── Mobile responsive ── */
 @media (max-width: 768px) {
-  .layout { grid-template-columns: 1fr; }
-  .panel-left { border-right: none; border-bottom: 1px solid var(--border); }
-  .summary-footer { grid-template-columns: 1fr 1fr; }
+  /* Topbar: hide sub-label and compress */
+  .topbar-sub { display: none; }
+  .topbar { padding: 0 12px; gap: 8px; }
+  .topbar-logo { font-size: 13px; }
+  #sync-status { display: none !important; }
+
+  /* Feedback + Export: smaller text on mobile */
+  .topbar-btn { font-size: 11px; padding: 5px 8px; }
+
+  /* Collapse button — hide on mobile (layout stacks) */
+  .collapse-btn { display: none; }
+
+  /* Stack layout vertically */
+  .layout {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+  }
+
+  /* Left panel: full width, scrollable, fixed max height */
+  .panel-left {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    position: static;
+    height: auto;
+    max-height: 70vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Right panel: full width, scrollable */
+  .panel-right {
+    height: auto;
+    overflow: visible;
+  }
+
+  /* Table: horizontal scroll */
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    height: auto;
+    max-height: 60vh;
+  }
+
+  /* Summary footer: 2 cols on mobile */
+  .summary-footer {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+  .summary-tile .s-value { font-size: 15px; }
+
+  /* Auth modal: full width on phone */
+  .auth-card {
+    width: calc(100vw - 32px);
+    padding: 24px 20px 20px;
+    max-width: 360px;
+  }
 }
 
 /* Tooltip */
@@ -750,7 +824,7 @@ tbody td.product-name {
   <div id="topbar-auth-area" style="display:flex;align-items:center;gap:8px">
     <button class="topbar-btn" onclick="showAuthModal()" id="login-btn">🔐 Sign In</button>
   </div>
-  <a class="topbar-btn" href="mailto:kashi13310@gmail.com?subject=TikTok%20Shop%20Calculator%20Feedback" style="text-decoration:none">✉ Feedback</a>
+  <a class="topbar-btn feedback-topbar-btn" href="mailto:kashi13310@gmail.com?subject=TikTok%20Shop%20Calculator%20Feedback" style="text-decoration:none">✉ Feedback</a>
   <button class="topbar-btn" onclick="exportCSV()">↓ Export CSV</button>
 </div>
 
