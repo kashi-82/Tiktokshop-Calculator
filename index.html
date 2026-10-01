@@ -1,5 +1,6 @@
 <title>TikTok Shop UK Calculator</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <style>
 /* Layout: left panel = inputs/controls, right panel = results grid */
@@ -121,11 +122,6 @@ body {
   border-color: transparent;
 }
 .topbar-btn.primary:hover { opacity: 0.9; }
-.topbar-btn.drive-active {
-  background: #1a73e8;
-  border-color: transparent;
-}
-.topbar-btn.drive-active:hover { opacity: 0.9; }
 
 /* ── Main layout ── */
 .layout {
@@ -620,7 +616,123 @@ tbody td.product-name {
 #drive-toast.success { background: #1a9e5e; }
 #drive-toast.error   { background: #d93025; }
 #drive-toast.info    { background: #1a73e8; }
+
+/* ── Auth modal ── */
+.auth-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.auth-overlay.hidden { display: none; }
+.auth-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 36px 32px 28px;
+  width: 360px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+.auth-logo {
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 700; font-size: 16px; margin-bottom: 6px;
+}
+.auth-logo .dot { color: var(--accent); font-size: 22px; }
+.auth-tagline { font-size: 12px; color: var(--fg3); margin-bottom: 24px; }
+.auth-tabs {
+  display: flex; gap: 0; margin-bottom: 22px;
+  border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden;
+}
+.auth-tab {
+  flex: 1; padding: 9px; text-align: center;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  color: var(--fg2); background: transparent;
+  border: none; font-family: var(--sans);
+  transition: background 0.15s, color 0.15s;
+}
+.auth-tab.active {
+  background: var(--accent); color: #fff;
+}
+.auth-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.auth-field label { font-size: 11px; font-weight: 600; color: var(--fg2); }
+.auth-field input {
+  font-family: var(--sans); font-size: 13px;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 8px; color: var(--fg); padding: 9px 12px;
+  outline: none; transition: border-color 0.15s; width: 100%;
+}
+.auth-field input:focus { border-color: var(--accent); }
+.auth-submit {
+  width: 100%; padding: 12px; border: none; border-radius: 10px;
+  background: var(--accent); color: #fff;
+  font-family: var(--sans); font-size: 14px; font-weight: 700;
+  cursor: pointer; margin-top: 4px; transition: opacity 0.15s;
+}
+.auth-submit:hover { opacity: 0.9; }
+.auth-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+.auth-msg {
+  font-size: 12px; margin-top: 12px; text-align: center;
+  padding: 8px 12px; border-radius: 8px;
+  display: none;
+}
+.auth-msg.error { background: var(--red-pale); color: var(--red); display: block; }
+.auth-msg.success { background: var(--green-pale); color: var(--green); display: block; }
+.auth-guest-btn {
+  width: 100%; margin-top: 10px; padding: 9px;
+  background: transparent; border: 1.5px solid var(--border);
+  border-radius: 10px; font-family: var(--sans); font-size: 13px;
+  font-weight: 600; color: var(--fg3); cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.auth-guest-btn:hover { border-color: var(--fg2); color: var(--fg); }
+
+/* topbar user pill */
+.topbar-user {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: rgba(255,255,255,0.75);
+}
+.topbar-user-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; letter-spacing: 0;
+}
+.topbar-user-email { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* sync indicator */
+.sync-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #555; display: inline-block; margin-right: 4px;
+  transition: background 0.3s;
+}
+.sync-dot.syncing { background: var(--yellow); animation: pulse-dot 1s infinite; }
+.sync-dot.synced  { background: var(--green); }
+.sync-dot.offline { background: var(--red); }
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
 </style>
+
+<!-- AUTH MODAL -->
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-logo"><span class="dot">●</span> TikTok Shop UK</div>
+    <div class="auth-tagline">Sign in to save your products across devices &amp; share with your team</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+      <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Create Account</button>
+    </div>
+    <div class="auth-field">
+      <label>Email</label>
+      <input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div class="auth-field">
+      <label>Password</label>
+      <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="auth-submit" id="auth-submit-btn" onclick="authSubmit()">Sign In</button>
+    <div class="auth-msg" id="auth-msg"></div>
+    <button class="auth-guest-btn" onclick="continueAsGuest()">Continue without account (local only)</button>
+  </div>
+</div>
 
 <!-- TOP BAR -->
 <div class="topbar">
@@ -630,10 +742,15 @@ tbody td.product-name {
     <span class="topbar-sub">Price Calculator</span>
   </div>
   <div class="topbar-spacer"></div>
+  <!-- Sync status -->
+  <span id="sync-status" style="font-size:11px;color:rgba(255,255,255,0.5);display:none">
+    <span class="sync-dot" id="sync-dot"></span><span id="sync-label">Synced</span>
+  </span>
+  <!-- Guest or logged-in user -->
+  <div id="topbar-auth-area" style="display:flex;align-items:center;gap:8px">
+    <button class="topbar-btn" onclick="showAuthModal()" id="login-btn">🔐 Sign In</button>
+  </div>
   <button class="topbar-btn" onclick="exportCSV()">↓ Export CSV</button>
-  <button class="topbar-btn" id="drive-btn" onclick="driveAction()">
-    <span id="drive-btn-label">☁ Save to Drive</span>
-  </button>
 </div>
 
 <!-- Toast notification -->
@@ -850,6 +967,218 @@ tbody td.product-name {
 </div>
 
 <script>
+// ── Supabase init ──
+const SUPABASE_URL  = 'https://ywhbrvgenmpdalqeedfp.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3aGJydmdlbm1wZGFscWVlZGZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4MzAxNDAsImV4cCI6MjEwNjQwNjE0MH0.oXKSHULHCNFR5KzmaVtpGkCvsIgiG5hvfRvcfxl_60Q';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// Current session state
+let currentUser = null;
+let isGuestMode = false;
+let syncTimeout = null;
+
+// ── Auth modal helpers ──
+function showAuthModal() {
+  document.getElementById('auth-overlay').classList.remove('hidden');
+}
+function hideAuthModal() {
+  document.getElementById('auth-overlay').classList.add('hidden');
+}
+
+function switchTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('tab-login').classList.toggle('active', isLogin);
+  document.getElementById('tab-signup').classList.toggle('active', !isLogin);
+  document.getElementById('auth-submit-btn').textContent = isLogin ? 'Sign In' : 'Create Account';
+  document.getElementById('auth-password').autocomplete = isLogin ? 'current-password' : 'new-password';
+  document.getElementById('auth-msg').className = 'auth-msg';
+}
+
+function authMsg(msg, type) {
+  const el = document.getElementById('auth-msg');
+  el.textContent = msg;
+  el.className = 'auth-msg ' + type;
+}
+
+async function authSubmit() {
+  const email    = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const isLogin  = document.getElementById('tab-login').classList.contains('active');
+  const btn      = document.getElementById('auth-submit-btn');
+
+  if (!email || !password) { authMsg('Please enter email and password.', 'error'); return; }
+  if (password.length < 6) { authMsg('Password must be at least 6 characters.', 'error'); return; }
+
+  btn.disabled = true;
+  btn.textContent = isLogin ? 'Signing in…' : 'Creating account…';
+  document.getElementById('auth-msg').className = 'auth-msg';
+
+  try {
+    let result;
+    if (isLogin) {
+      result = await sb.auth.signInWithPassword({ email, password });
+    } else {
+      result = await sb.auth.signUp({ email, password });
+    }
+
+    if (result.error) {
+      authMsg(result.error.message, 'error');
+    } else if (!isLogin && !result.data.session) {
+      authMsg('✓ Account created! Check your email to confirm, then sign in.', 'success');
+    } else {
+      // Signed in successfully
+      currentUser = result.data.user;
+      isGuestMode = false;
+      onUserSignedIn(currentUser);
+      hideAuthModal();
+    }
+  } catch(e) {
+    authMsg('Error: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = isLogin ? 'Sign In' : 'Create Account';
+  }
+}
+
+// Allow pressing Enter to submit
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !document.getElementById('auth-overlay').classList.contains('hidden')) {
+    authSubmit();
+  }
+});
+
+function continueAsGuest() {
+  isGuestMode = true;
+  currentUser = null;
+  hideAuthModal();
+  renderTopbarUser(null);
+  // Load from localStorage
+  if (loadLocal()) {
+    renderTable();
+    toast('✓ ' + products.length + ' product(s) restored (local only)', 'success', 3000);
+  }
+}
+
+function renderTopbarUser(user) {
+  const area = document.getElementById('topbar-auth-area');
+  const syncStatus = document.getElementById('sync-status');
+  if (user) {
+    const initials = user.email.substring(0,2).toUpperCase();
+    area.innerHTML = `
+      <div class="topbar-user">
+        <div class="topbar-user-avatar">${initials}</div>
+        <span class="topbar-user-email">${user.email}</span>
+      </div>
+      <button class="topbar-btn" onclick="signOut()" style="font-size:11px;padding:5px 10px">Sign Out</button>
+    `;
+    syncStatus.style.display = 'flex';
+    syncStatus.style.alignItems = 'center';
+  } else {
+    area.innerHTML = `<button class="topbar-btn" onclick="showAuthModal()" id="login-btn">🔐 Sign In</button>`;
+    syncStatus.style.display = 'none';
+  }
+}
+
+function setSyncStatus(state) {
+  // state: 'syncing' | 'synced' | 'offline'
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  if (!dot) return;
+  dot.className = 'sync-dot ' + state;
+  lbl.textContent = state === 'syncing' ? 'Saving…' : state === 'synced' ? 'Saved' : 'Offline';
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  currentUser = null;
+  isGuestMode = false;
+  products = [];
+  srCounter = 1;
+  renderTable();
+  renderTopbarUser(null);
+  toast('Signed out. Your data is saved to your account.', 'info', 3000);
+  showAuthModal();
+}
+
+// ── Called after sign-in: load user data from Supabase ──
+async function onUserSignedIn(user) {
+  currentUser = user;
+  renderTopbarUser(user);
+  toast('Signed in! Loading your products…', 'info', 2000);
+  await loadFromSupabase();
+  renderTable();
+  if (products.length > 0) {
+    toast('✓ ' + products.length + ' product(s) loaded from your account', 'success', 3000);
+  } else {
+    // Try restoring from local as a first-time migration
+    const hadLocal = loadLocal();
+    if (hadLocal && products.length > 0) {
+      toast('First login — syncing your local products to cloud…', 'info', 3000);
+      await saveToSupabase();
+      renderTable();
+    }
+  }
+}
+
+// ── Supabase DB operations ──
+// Table: user_products (id uuid pk, user_id uuid, data jsonb, updated_at timestamptz)
+// We store ALL products as one JSON blob per user for simplicity.
+
+async function loadFromSupabase() {
+  if (!currentUser) return false;
+  try {
+    const { data, error } = await sb
+      .from('user_products')
+      .select('data, sr_counter')
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+
+    if (error) { console.warn('Load error:', error); return false; }
+    if (data && data.data && Array.isArray(data.data)) {
+      products = data.data;
+      srCounter = data.sr_counter || (products.length + 1);
+      return true;
+    }
+  } catch(e) { console.warn('Load exception:', e); }
+  return false;
+}
+
+async function saveToSupabase() {
+  if (!currentUser) return;
+  setSyncStatus('syncing');
+  try {
+    const { error } = await sb
+      .from('user_products')
+      .upsert({
+        user_id:    currentUser.id,
+        data:       products,
+        sr_counter: srCounter,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+
+    if (error) {
+      console.warn('Save error:', error);
+      setSyncStatus('offline');
+      toast('⚠ Cloud save failed — data saved locally', 'error', 3000);
+    } else {
+      setSyncStatus('synced');
+    }
+  } catch(e) {
+    setSyncStatus('offline');
+    console.warn('Save exception:', e);
+  }
+}
+
+// Debounced auto-save: runs 800ms after last change
+function scheduleSave() {
+  clearTimeout(syncTimeout);
+  saveLocal(); // always save locally immediately
+  if (currentUser) {
+    setSyncStatus('syncing');
+    syncTimeout = setTimeout(() => saveToSupabase(), 800);
+  }
+}
+
 // ── Assumptions (same as Excel) ──
 const A = {
   commStd:   0.09,
@@ -907,25 +1236,6 @@ function loadLocal() {
   return false;
 }
 
-// ── Google Drive integration ──
-// Uses Google Drive API via browser OAuth (user's own Google account)
-// No server-side required — GAPI + GIS (Google Identity Services)
-const DRIVE_FILE_NAME = 'TikTokShopUK_Calculator_Data.json';
-let driveFileId = null;   // ID of the file in Drive once saved
-let driveSignedIn = false;
-let driveAccessToken = null;
-let driveTokenExpiry = 0;
-
-// We use a public OAuth client that requests Drive file scope
-// The client ID below is for "Any Google user" implicit grant — Drive file only (not full Drive)
-// This is the standard approach for user-controlled browser apps
-const GAPI_CLIENT_ID = ''; // Loaded dynamically — see driveInit()
-const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
-
-// Since we can't embed a real OAuth client ID here (it would be app-specific),
-// we use a different approach: Google Drive "Save to Drive" button approach
-// which works without a client ID by using data URIs + Google Picker
-
 function toast(msg, type='info', dur=3000) {
   const el = document.getElementById('drive-toast');
   el.textContent = msg;
@@ -934,168 +1244,6 @@ function toast(msg, type='info', dur=3000) {
   el._t = setTimeout(() => { el.className = ''; }, dur);
 }
 
-// ── Drive: upload as JSON to Drive using GAPI with OAuth popup ──
-async function driveAction() {
-  if (products.length === 0) {
-    toast('No products to save. Add a product first.', 'error');
-    return;
-  }
-
-  // If we already have a valid token, save directly
-  if (driveSignedIn && Date.now() < driveTokenExpiry) {
-    await driveSave();
-    return;
-  }
-
-  // Initiate OAuth via Google Identity Services popup
-  toast('Opening Google sign-in…', 'info', 8000);
-  driveSignIn();
-}
-
-function driveSignIn() {
-  // Load GIS script if not already present
-  if (!window.google || !window.google.accounts) {
-    const s = document.createElement('script');
-    s.src = 'https://accounts.google.com/gsi/client';
-    s.onload = () => initTokenClient();
-    s.onerror = () => toast('Could not load Google auth. Check internet.', 'error');
-    document.head.appendChild(s);
-  } else {
-    initTokenClient();
-  }
-}
-
-let tokenClient = null;
-function initTokenClient() {
-  // Attempt to use the implicit grant flow with a public demo client
-  // For production, replace with your own Google Cloud OAuth client ID
-  // Registered for *.claude.ai origins
-  const CLIENT_ID = '481898061814-mv5fvkl0kol4dlu0a8vvcirre71kqs4m.apps.googleusercontent.com';
-
-  try {
-    tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: DRIVE_SCOPE,
-      callback: async (tokenResponse) => {
-        if (tokenResponse.error) {
-          toast('Google sign-in failed: ' + tokenResponse.error, 'error');
-          return;
-        }
-        driveAccessToken = tokenResponse.access_token;
-        driveTokenExpiry = Date.now() + (tokenResponse.expires_in - 60) * 1000;
-        driveSignedIn = true;
-        updateDriveBtn(true);
-        await driveSave();
-      }
-    });
-    tokenClient.requestAccessToken({ prompt: 'consent' });
-  } catch(e) {
-    // Fallback if GIS fails — use manual download + instructions
-    toast('Google OAuth not available. Downloading file for manual upload…', 'info', 5000);
-    driveManualFallback();
-  }
-}
-
-function updateDriveBtn(signedIn) {
-  const btn = document.getElementById('drive-btn');
-  const lbl = document.getElementById('drive-btn-label');
-  if (signedIn) {
-    btn.classList.add('drive-active');
-    lbl.textContent = '☁ Saved to Drive';
-  } else {
-    btn.classList.remove('drive-active');
-    lbl.textContent = '☁ Save to Drive';
-  }
-}
-
-async function driveSave() {
-  const label = document.getElementById('drive-btn-label');
-  label.textContent = '⏳ Saving…';
-
-  const fileContent = JSON.stringify({
-    savedAt: new Date().toISOString(),
-    version: 1,
-    products,
-    srCounter
-  }, null, 2);
-
-  try {
-    let res;
-    if (driveFileId) {
-      // Update existing file
-      res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': 'Bearer ' + driveAccessToken,
-          'Content-Type': 'application/json'
-        },
-        body: fileContent
-      });
-    } else {
-      // Search for existing file first
-      const searchRes = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=name%3D'${DRIVE_FILE_NAME}'%20and%20trashed%3Dfalse&fields=files(id,name,modifiedTime)`,
-        { headers: { 'Authorization': 'Bearer ' + driveAccessToken } }
-      );
-      const searchData = await searchRes.json();
-      if (searchData.files && searchData.files.length > 0) {
-        driveFileId = searchData.files[0].id;
-        // Update found file
-        res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': 'Bearer ' + driveAccessToken,
-            'Content-Type': 'application/json'
-          },
-          body: fileContent
-        });
-      } else {
-        // Create new file via multipart upload
-        const boundary = 'tt_calc_boundary';
-        const meta = JSON.stringify({ name: DRIVE_FILE_NAME, mimeType: 'application/json' });
-        const body = `--${boundary}\r\nContent-Type: application/json\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${fileContent}\r\n--${boundary}--`;
-        res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + driveAccessToken,
-            'Content-Type': `multipart/related; boundary=${boundary}`
-          },
-          body
-        });
-      }
-    }
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data.id) driveFileId = data.id;
-      toast('✓ Saved to Google Drive!', 'success');
-      updateDriveBtn(true);
-      label.textContent = '☁ Saved ✓';
-      setTimeout(() => { label.textContent = '☁ Save to Drive'; }, 3000);
-    } else {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || res.statusText);
-    }
-  } catch(e) {
-    toast('Drive save failed: ' + e.message, 'error', 5000);
-    label.textContent = '☁ Save to Drive';
-    updateDriveBtn(false);
-    driveSignedIn = false;
-  }
-}
-
-// Fallback: download JSON file + show instructions
-function driveManualFallback() {
-  const data = JSON.stringify({ savedAt: new Date().toISOString(), version: 1, products, srCounter }, null, 2);
-  const blob = new Blob([data], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = DRIVE_FILE_NAME;
-  a.click();
-  setTimeout(() => {
-    alert('File downloaded!\n\nTo save to Drive:\n1. Open drive.google.com\n2. Click "+ New" → "File upload"\n3. Select "' + DRIVE_FILE_NAME + '" from your Downloads\n\nNext time: open the file from Drive and use File → Save.');
-  }, 500);
-}
 
 // ── Pill toggle ──
 document.querySelectorAll('.pill-group').forEach(group => {
@@ -1214,7 +1362,7 @@ function addProduct() {
   }));
 
   products.push({ sr: srCounter++, name, inp: baseInp, scenarios });
-  saveLocal();          // ← auto-save after every add
+  scheduleSave();       // ← auto-save (local + cloud)
   renderTable();
 }
 
@@ -1310,7 +1458,7 @@ function renderTable() {
 
 function deleteRow(idx) {
   products.splice(idx, 1);
-  saveLocal();
+  scheduleSave();
   renderTable();
 }
 
@@ -1319,7 +1467,7 @@ function clearAll() {
   if (confirm('Clear all ' + products.length + ' product(s)?')) {
     products = [];
     srCounter = 1;
-    saveLocal();
+    scheduleSave();
     renderTable();
   }
 }
@@ -1359,24 +1507,54 @@ function exportCSV() {
   a.click();
 }
 
-// ── On load: restore from localStorage, then load example if empty ──
-window.addEventListener('DOMContentLoaded', () => {
-  const restored = loadLocal();
-  if (restored) {
-    renderTable();
-    toast('✓ ' + products.length + ' product(s) restored from last session', 'success', 3000);
+// ── On load: check Supabase session, else show auth modal ──
+window.addEventListener('DOMContentLoaded', async () => {
+  // Check if user is already signed in (session persists via Supabase)
+  const { data: { session } } = await sb.auth.getSession();
+
+  if (session && session.user) {
+    // Returning user — load their cloud data
+    await onUserSignedIn(session.user);
+    if (products.length === 0) {
+      loadExampleProduct();
+    }
   } else {
-    // Pre-load 1 example
-    document.getElementById('inp-name').value = 'COSRX Snail Serum 96%';
-    document.getElementById('inp-cost').value = '6.50';
-    document.getElementById('m1').value = '10';
-    document.getElementById('m2').value = '15';
-    document.getElementById('m3').value = '20';
-    document.getElementById('m4').value = '25';
-    const catG = document.getElementById('pill-category');
-    catG.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.val.includes('Beauty')));
-    addProduct();
-    resetForm();
+    // No session — check local storage for guest data
+    const hasLocal = loadLocal();
+    if (hasLocal) {
+      // Has local data — let them choose: sign in or continue as guest
+      isGuestMode = true;
+      renderTopbarUser(null);
+      renderTable();
+      toast('✓ ' + products.length + ' local product(s) found. Sign in to sync to cloud!', 'info', 5000);
+      // Show auth modal after a short delay so they see the data first
+      setTimeout(showAuthModal, 2500);
+    } else {
+      // Brand new — show auth modal immediately
+      showAuthModal();
+    }
   }
+
+  // Listen for auth state changes
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      currentUser = session.user;
+    } else if (event === 'SIGNED_OUT') {
+      currentUser = null;
+    }
+  });
 });
+
+function loadExampleProduct() {
+  document.getElementById('inp-name').value = 'COSRX Snail Serum 96%';
+  document.getElementById('inp-cost').value = '6.50';
+  document.getElementById('m1').value = '10';
+  document.getElementById('m2').value = '15';
+  document.getElementById('m3').value = '20';
+  document.getElementById('m4').value = '25';
+  const catG = document.getElementById('pill-category');
+  catG.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.val.includes('Beauty')));
+  addProduct();
+  resetForm();
+}
 </script>
