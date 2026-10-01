@@ -583,60 +583,65 @@ tbody td.product-name {
 
 /* ── Mobile responsive ── */
 @media (max-width: 768px) {
-  /* Topbar: hide sub-label and compress */
+  /* Allow page to scroll normally */
+  html, body {
+    height: auto !important;
+    overflow: auto !important;
+  }
+
+  /* Topbar: compress */
   .topbar-sub { display: none; }
-  .topbar { padding: 0 12px; gap: 8px; }
+  .topbar { padding: 0 10px; gap: 6px; height: 48px; }
   .topbar-logo { font-size: 13px; }
   #sync-status { display: none !important; }
+  .topbar-btn { font-size: 10px; padding: 5px 7px; }
 
-  /* Feedback + Export: smaller text on mobile */
-  .topbar-btn { font-size: 11px; padding: 5px 8px; }
+  /* Collapse button — hide on mobile */
+  .collapse-btn { display: none !important; }
 
-  /* Collapse button — hide on mobile (layout stacks) */
-  .collapse-btn { display: none; }
-
-  /* Stack layout vertically */
+  /* Layout: normal vertical scroll, no fixed heights */
   .layout {
-    display: flex;
-    flex-direction: column;
-    height: auto;
-    overflow: visible;
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    grid-template-columns: none !important;
   }
 
-  /* Left panel: full width, scrollable, fixed max height */
+  /* Left panel: normal flow, no fixed height */
   .panel-left {
+    position: static !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
     border-right: none;
     border-bottom: 1px solid var(--border);
-    position: static;
-    height: auto;
-    max-height: 70vh;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    width: 100%;
   }
 
-  /* Right panel: full width, scrollable */
+  /* Right panel: normal flow */
   .panel-right {
-    height: auto;
-    overflow: visible;
+    height: auto !important;
+    overflow: visible !important;
   }
 
-  /* Table: horizontal scroll */
+  /* Table: horizontal scroll container */
   .table-wrap {
-    overflow-x: auto;
+    height: auto !important;
+    max-height: none !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
     -webkit-overflow-scrolling: touch;
-    height: auto;
-    max-height: 60vh;
   }
 
-  /* Summary footer: 2 cols on mobile */
+  /* Summary footer: 2 cols */
   .summary-footer {
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 8px;
     padding: 12px 14px;
   }
-  .summary-tile .s-value { font-size: 15px; }
+  .summary-tile .s-value { font-size: 14px; }
 
-  /* Auth modal: full width on phone */
+  /* Auth modal: full width */
   .auth-card {
     width: calc(100vw - 32px);
     padding: 24px 20px 20px;
