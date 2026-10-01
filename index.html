@@ -712,7 +712,7 @@ tbody td.product-name {
 </style>
 
 <!-- AUTH MODAL -->
-<div class="auth-overlay" id="auth-overlay">
+<div class="auth-overlay hidden" id="auth-overlay">
   <div class="auth-card">
     <div class="auth-logo"><span class="dot">●</span> TikTok Shop UK</div>
     <div class="auth-tagline">Sign in to save your products across devices &amp; share with your team</div>
@@ -1515,42 +1515,43 @@ function exportCSV() {
   a.click();
 }
 
-// ── On load: check Supabase session, else show auth modal ──
-window.addEventListener('DOMContentLoaded', async () => {
-  // Check if user is already signed in (session persists via Supabase)
-  const { data: { session } } = await sb.auth.getSession();
+// ── On load: restore session via onAuthStateChange (most reliable) ──
+window.addEventListener('DOMContentLoaded', () => {
+  let sessionChecked = false;
 
-  if (session && session.user) {
-    // Returning user — load their cloud data
-    await onUserSignedIn(session.user);
-    if (products.length === 0) {
-      loadExampleProduct();
-    }
-  } else {
-    // No session — check local storage for guest data
-    const hasLocal = loadLocal();
-    if (hasLocal) {
-      // Has local data — let them choose: sign in or continue as guest
-      isGuestMode = true;
-      renderTopbarUser(null);
-      renderTable();
-      toast('✓ ' + products.length + ' local product(s) found. Sign in to sync to cloud!', 'info', 5000);
-      // Show auth modal after a short delay so they see the data first
-      setTimeout(showAuthModal, 2500);
-    } else {
-      // Brand new — show auth modal immediately
-      showAuthModal();
-    }
-  }
-
-  // Listen for auth state changes
+  // onAuthStateChange fires immediately with INITIAL_SESSION event
+  // — this is the correct way to restore a persisted session
   sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session) {
+    if (event === 'INITIAL_SESSION') {
+      sessionChecked = true;
+      if (session && session.user) {
+        // Returning logged-in user
+        await onUserSignedIn(session.user);
+        if (products.length === 0) loadExampleProduct();
+      } else {
+        // No session — guest or new user
+        const hasLocal = loadLocal();
+        if (hasLocal) {
+          isGuestMode = true;
+          renderTopbarUser(null);
+          renderTable();
+          toast('✓ ' + products.length + ' local product(s) found. Sign in to sync to cloud!', 'info', 5000);
+          setTimeout(showAuthModal, 2500);
+        } else {
+          showAuthModal();
+        }
+      }
+    } else if (event === 'SIGNED_IN' && session) {
       currentUser = session.user;
     } else if (event === 'SIGNED_OUT') {
       currentUser = null;
     }
   });
+
+  // Safety fallback: if INITIAL_SESSION never fires within 3s, show modal
+  setTimeout(() => {
+    if (!sessionChecked) showAuthModal();
+  }, 3000);
 });
 
 function loadExampleProduct() {
