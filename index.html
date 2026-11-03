@@ -427,7 +427,14 @@ tbody td.product-name {
 }
 
 /* Action buttons per row */
-.row-actions { display: flex; gap: 4px; align-items: center; }
+.row-actions { display: flex; gap: 4px; align-items: center; justify-content: center; }
+.sticky-actions {
+  position: sticky;
+  right: 0;
+  background: inherit;
+  z-index: 5;
+  box-shadow: -4px 0 8px rgba(0,0,0,0.08);
+}
 .row-del {
   background: none;
   border: 1.5px solid var(--border);
@@ -1966,7 +1973,7 @@ function renderTable() {
           <span class="group-name-label">${p.name}</span>
           <span class="group-pack-count">${p.variations.length} pack${p.variations.length !== 1 ? 's' : ''}</span>
         </td>
-        <td>
+        <td class="sticky-actions">
           <div class="row-actions">
             <button class="row-edit" onclick="openEditModal(${idx})" title="Rename group">✏</button>
             <button class="row-dup" onclick="duplicateRow(${idx})" title="Duplicate group">⧉</button>
@@ -1999,7 +2006,7 @@ function renderTable() {
               &nbsp;Affiliate ${i.affiliatePct}% · Return ${i.returnRate}%
             </td>
             <td colspan="8"></td>
-            <td>
+            <td class="sticky-actions">
               <div class="row-actions">
                 <button class="row-edit" onclick="openEditModal(${idx}, ${vi})" title="Edit variation">✏</button>
                 <button class="row-dup" onclick="duplicateVariation(${idx}, ${vi})" title="Duplicate variation">⧉</button>
@@ -2065,7 +2072,7 @@ function renderTable() {
         <td class="num">${(r0.commRate*100).toFixed(0)}%</td>
         <td class="num">—</td>
         <td colspan="5"></td>
-        <td colspan="2">
+        <td colspan="2" class="sticky-actions">
           <div class="row-actions">
             <button class="row-edit" onclick="openEditModal(${idx})" title="Edit product">✏</button>
             <button class="row-dup" onclick="duplicateRow(${idx})" title="Duplicate product">⧉</button>
