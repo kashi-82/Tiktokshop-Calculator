@@ -427,18 +427,122 @@ tbody td.product-name {
 }
 
 /* Action buttons per row */
-.row-actions { display: flex; gap: 6px; }
+.row-actions { display: flex; gap: 4px; align-items: center; }
 .row-del {
   background: none;
   border: 1.5px solid var(--border);
   color: var(--fg3);
   border-radius: 6px;
-  padding: 3px 8px;
+  padding: 3px 7px;
   cursor: pointer;
   font-size: 11px;
   transition: all 0.1s;
 }
 .row-del:hover { border-color: var(--red); color: var(--red); }
+.row-dup {
+  background: none;
+  border: 1.5px solid var(--border);
+  color: var(--fg3);
+  border-radius: 6px;
+  padding: 3px 7px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.1s;
+}
+.row-dup:hover { border-color: var(--accent); color: var(--accent); }
+.row-edit {
+  background: none;
+  border: 1.5px solid var(--border);
+  color: var(--fg3);
+  border-radius: 6px;
+  padding: 3px 7px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.1s;
+}
+.row-edit:hover { border-color: #2563eb; color: #2563eb; }
+
+/* ── Edit Modal ── */
+.edit-overlay {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.edit-overlay.hidden { display: none; }
+.edit-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 28px 22px;
+  width: 440px;
+  max-width: calc(100vw - 32px);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.edit-card h3 {
+  font-size: 15px; font-weight: 700; margin-bottom: 18px;
+  display: flex; align-items: center; gap: 8px;
+}
+.edit-card h3 .edit-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: var(--accent-pale); color: var(--accent);
+}
+.edit-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;
+}
+.edit-field { display: flex; flex-direction: column; gap: 4px; }
+.edit-field.full { grid-column: 1 / -1; }
+.edit-field label { font-size: 10px; font-weight: 700; color: var(--fg3); text-transform: uppercase; letter-spacing: 0.5px; }
+.edit-field input, .edit-field select {
+  font-family: var(--sans); font-size: 13px;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 8px; color: var(--fg); padding: 7px 10px;
+  outline: none; transition: border-color 0.15s; width: 100%;
+}
+.edit-field input:focus, .edit-field select:focus { border-color: var(--accent); }
+.edit-section-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.7px; color: var(--fg3);
+  margin: 14px 0 8px; grid-column: 1 / -1;
+}
+.edit-margins { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 14px; }
+.edit-margin-box {
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 3px;
+}
+.edit-margin-box label { font-size: 9px; font-weight: 700; color: var(--fg3); text-transform: uppercase; }
+.edit-margin-box input {
+  font-family: var(--mono); font-size: 15px; font-weight: 700;
+  background: transparent; border: none; color: var(--accent);
+  outline: none; width: 100%; padding: 0;
+}
+.edit-pill-group {
+  display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 4px;
+}
+.edit-pill {
+  font-size: 11px; font-weight: 600; padding: 4px 10px;
+  border: 1.5px solid var(--border); border-radius: 20px;
+  cursor: pointer; color: var(--fg2); background: transparent;
+  transition: all 0.12s;
+}
+.edit-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.edit-actions { display: flex; gap: 8px; margin-top: 18px; }
+.edit-save-btn {
+  flex: 1; padding: 11px; border: none; border-radius: 10px;
+  background: var(--accent); color: #fff;
+  font-family: var(--sans); font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: opacity 0.15s;
+}
+.edit-save-btn:hover { opacity: 0.88; }
+.edit-cancel-btn {
+  padding: 11px 18px; border: 1.5px solid var(--border); border-radius: 10px;
+  background: transparent; color: var(--fg2);
+  font-family: var(--sans); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.edit-cancel-btn:hover { border-color: var(--fg); color: var(--fg); }
 
 /* Empty state */
 .empty-state {
@@ -913,6 +1017,106 @@ tbody td.product-name {
 .sync-dot.offline { background: var(--red); }
 @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
 </style>
+
+<!-- EDIT MODAL -->
+<div class="edit-overlay hidden" id="edit-overlay">
+  <div class="edit-card">
+    <h3>
+      <span id="edit-modal-title">Edit Product</span>
+      <span class="edit-badge" id="edit-modal-badge">Standalone</span>
+    </h3>
+
+    <div class="edit-grid">
+      <div class="edit-field full" id="edit-name-wrap">
+        <label>Product Name</label>
+        <input type="text" id="edit-name" placeholder="Product name">
+      </div>
+      <div class="edit-field full" id="edit-varname-wrap" style="display:none">
+        <label>Pack / Variation Name</label>
+        <input type="text" id="edit-varname" placeholder="e.g. Pack of 3">
+      </div>
+      <div class="edit-field">
+        <label>Cost Price (£)</label>
+        <input type="number" id="edit-cost" min="0" step="0.01">
+      </div>
+      <div class="edit-field">
+        <label>Affiliate Fee (%)</label>
+        <input type="number" id="edit-affiliate" min="0" max="50" step="0.5">
+      </div>
+      <div class="edit-field">
+        <label>Return Rate (%)</label>
+        <input type="number" id="edit-return" min="0" max="80" step="1">
+      </div>
+      <div class="edit-field" id="edit-weight-wrap">
+        <label>Parcel Weight</label>
+        <select id="edit-weight">
+          <option value="Under 0.5 kg (£2.57)">Under 0.5 kg — £2.57</option>
+          <option value="0.5-1 kg (£3.08)">0.5–1 kg — £3.08</option>
+          <option value="1-2 kg (£3.85)">1–2 kg — £3.85</option>
+          <option value="2-5 kg (£5.14)">2–5 kg — £5.14</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Target Margins -->
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--fg3);margin-bottom:8px">Target Margins — 4 Scenarios</div>
+    <div class="edit-margins">
+      <div class="edit-margin-box"><label>Sc 1</label><input type="number" id="em1" min="0" max="90"></div>
+      <div class="edit-margin-box"><label>Sc 2</label><input type="number" id="em2" min="0" max="90"></div>
+      <div class="edit-margin-box"><label>Sc 3</label><input type="number" id="em3" min="0" max="90"></div>
+      <div class="edit-margin-box"><label>Sc 4</label><input type="number" id="em4" min="0" max="90"></div>
+    </div>
+
+    <!-- Category -->
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--fg3);margin-bottom:6px">Category</div>
+    <div class="edit-pill-group" id="epill-category" style="margin-bottom:12px">
+      <button class="edit-pill" data-val="General/Fashion/Food (9%)">General / Fashion</button>
+      <button class="edit-pill" data-val="Beauty & Personal Care (5%)">Beauty & Personal Care</button>
+    </div>
+
+    <!-- Fulfilment -->
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--fg3);margin-bottom:6px">Fulfilment</div>
+    <div class="edit-pill-group" id="epill-fulfilment" style="margin-bottom:12px">
+      <button class="edit-pill" data-val="Shipped via Platform (SVP)">SVP</button>
+      <button class="edit-pill" data-val="Fulfilled by TikTok (FBT)">FBT</button>
+      <button class="edit-pill" data-val="Shipped by Seller (SBS)">SBS</button>
+    </div>
+
+    <!-- Seller -->
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--fg3);margin-bottom:6px">Seller Type</div>
+    <div class="edit-pill-group" id="epill-seller" style="margin-bottom:12px">
+      <button class="edit-pill" data-val="Established">Established</button>
+      <button class="edit-pill" data-val="New Seller (Intro ~5%)">New Seller</button>
+    </div>
+
+    <!-- Shipping payer -->
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--fg3);margin-bottom:6px">Shipping Paid By</div>
+    <div class="edit-pill-group" id="epill-shipping" style="margin-bottom:12px">
+      <button class="edit-pill" data-val="Seller">Seller 📦</button>
+      <button class="edit-pill" data-val="Buyer">Buyer 🛒</button>
+    </div>
+
+    <!-- Packaging -->
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--fg3);margin-bottom:6px">Packaging</div>
+    <div class="edit-pill-group" id="epill-packaging" style="margin-bottom:12px">
+      <button class="edit-pill" data-val="None">None</button>
+      <button class="edit-pill" data-val="TikTok pkg - own materials (£0.41)">Own (£0.41)</button>
+      <button class="edit-pill" data-val="TikTok bubble wrap (£0.60)">Bubble (£0.60)</button>
+    </div>
+
+    <!-- VAT -->
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--fg3);margin-bottom:6px">VAT Registered?</div>
+    <div class="edit-pill-group" id="epill-vat" style="margin-bottom:4px">
+      <button class="edit-pill" data-val="No">No</button>
+      <button class="edit-pill" data-val="Yes">Yes</button>
+    </div>
+
+    <div class="edit-actions">
+      <button class="edit-cancel-btn" onclick="closeEditModal()">Cancel</button>
+      <button class="edit-save-btn" onclick="saveEdit()">✓ Save Changes</button>
+    </div>
+  </div>
+</div>
 
 <!-- AUTH MODAL -->
 <div class="auth-overlay hidden" id="auth-overlay">
@@ -1764,6 +1968,8 @@ function renderTable() {
         </td>
         <td>
           <div class="row-actions">
+            <button class="row-edit" onclick="openEditModal(${idx})" title="Rename group">✏</button>
+            <button class="row-dup" onclick="duplicateRow(${idx})" title="Duplicate group">⧉</button>
             <button class="row-del" onclick="deleteRow(${idx})" title="Delete group and all variations">✕</button>
           </div>
         </td>
@@ -1795,6 +2001,8 @@ function renderTable() {
             <td colspan="8"></td>
             <td>
               <div class="row-actions">
+                <button class="row-edit" onclick="openEditModal(${idx}, ${vi})" title="Edit variation">✏</button>
+                <button class="row-dup" onclick="duplicateVariation(${idx}, ${vi})" title="Duplicate variation">⧉</button>
                 <button class="row-del" onclick="deleteVariation(${idx}, ${vi})" title="Delete this variation">✕</button>
               </div>
             </td>
@@ -1857,7 +2065,13 @@ function renderTable() {
         <td class="num">${(r0.commRate*100).toFixed(0)}%</td>
         <td class="num">—</td>
         <td colspan="5"></td>
-        <td colspan="2"><div class="row-actions"><button class="row-del" onclick="deleteRow(${idx})">✕</button></div></td>
+        <td colspan="2">
+          <div class="row-actions">
+            <button class="row-edit" onclick="openEditModal(${idx})" title="Edit product">✏</button>
+            <button class="row-dup" onclick="duplicateRow(${idx})" title="Duplicate product">⧉</button>
+            <button class="row-del" onclick="deleteRow(${idx})">✕</button>
+          </div>
+        </td>
       `;
       tbody.appendChild(groupTr);
 
@@ -1954,6 +2168,199 @@ function toggleGroupCollapse(idx) {
     scheduleSave();
     renderTable();
   }
+}
+
+// ── Duplicate ──
+function duplicateRow(idx) {
+  const p = products[idx];
+  if (!p) return;
+  const clone = JSON.parse(JSON.stringify(p)); // deep copy
+
+  if (clone.type === 'group') {
+    clone.id = 'g_' + Date.now();
+    clone.name = clone.name + ' (Copy)';
+    clone.collapsed = false;
+    clone.variations = clone.variations.map(v => ({ ...v, sr: srCounter++ }));
+  } else {
+    clone.sr = srCounter++;
+    clone.name = clone.name + ' (Copy)';
+  }
+  products.splice(idx + 1, 0, clone);
+  scheduleSave();
+  renderTable();
+}
+
+function duplicateVariation(groupIdx, varIdx) {
+  const grp = products[groupIdx];
+  if (!grp || grp.type !== 'group') return;
+  const clone = JSON.parse(JSON.stringify(grp.variations[varIdx]));
+  clone.sr = srCounter++;
+  clone.varName = clone.varName + ' (Copy)';
+  grp.variations.splice(varIdx + 1, 0, clone);
+  scheduleSave();
+  renderTable();
+}
+
+// ── Edit Modal ──
+let _editCtx = null; // { type:'standalone'|'group'|'variation', idx, varIdx? }
+
+function editPillActive(groupId, val) {
+  document.querySelectorAll(`#${groupId} .edit-pill`).forEach(p => {
+    p.classList.toggle('active', p.dataset.val === val);
+  });
+}
+function getEditPill(groupId) {
+  const el = document.querySelector(`#${groupId} .edit-pill.active`);
+  return el ? el.dataset.val : '';
+}
+
+// wire up edit-pill clicks
+document.querySelectorAll('.edit-pill-group').forEach(grp => {
+  grp.querySelectorAll('.edit-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      grp.querySelectorAll('.edit-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+    });
+  });
+});
+
+function openEditModal(idx, varIdx) {
+  let inp, margins, nameVal, titleText, badgeText;
+
+  if (varIdx !== undefined) {
+    // editing a variation inside a group
+    const grp = products[idx];
+    const v = grp.variations[varIdx];
+    _editCtx = { type: 'variation', idx, varIdx };
+    inp = v.inp;
+    margins = v.scenarios.map(s => s.marginPct);
+    nameVal = v.varName;
+    titleText = 'Edit Variation';
+    badgeText = grp.name;
+    document.getElementById('edit-name-wrap').style.display = 'none';
+    document.getElementById('edit-varname-wrap').style.display = 'flex';
+    document.getElementById('edit-varname').value = nameVal;
+  } else {
+    const p = products[idx];
+    _editCtx = { type: p.type, idx };
+    if (p.type === 'group') {
+      // editing a group header — only name
+      inp = null;
+      margins = null;
+      titleText = 'Edit Group Name';
+      badgeText = 'Group';
+      document.getElementById('edit-name-wrap').style.display = 'flex';
+      document.getElementById('edit-name').value = p.name;
+      document.getElementById('edit-varname-wrap').style.display = 'none';
+      // hide all the inp fields — will recalculate on save
+      ['edit-cost','edit-affiliate','edit-return','edit-weight-wrap','em1','em2','em3','em4'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.closest('.edit-field, .edit-margin-box, .edit-margins') ? null : null;
+      });
+      // show modal with minimal fields for group
+      document.getElementById('edit-overlay').classList.remove('hidden');
+      document.getElementById('edit-modal-title').textContent = titleText;
+      document.getElementById('edit-modal-badge').textContent = badgeText;
+      // hide non-name sections for group-only edit
+      document.getElementById('edit-overlay').querySelectorAll(
+        '.edit-grid > .edit-field:not(#edit-name-wrap), .edit-margins, .edit-pill-group, [style*="margin-bottom"]'
+      );
+      // simplest: just show name, hide cost & pills
+      document.querySelectorAll('.edit-card > *:not(h3):not(.edit-actions)').forEach(el => {
+        if (el.id === 'edit-name-wrap' || el.classList.contains('edit-grid')) {
+          // keep grid (has name field inside)
+        }
+      });
+      return; // early return for group name-only edit
+    } else {
+      inp = p.inp;
+      margins = p.scenarios.map(s => s.marginPct);
+      titleText = 'Edit Product';
+      badgeText = 'Standalone';
+      document.getElementById('edit-name-wrap').style.display = 'flex';
+      document.getElementById('edit-name').value = p.name;
+      document.getElementById('edit-varname-wrap').style.display = 'none';
+    }
+  }
+
+  // populate fields
+  if (inp) {
+    document.getElementById('edit-cost').value = inp.cost;
+    document.getElementById('edit-affiliate').value = inp.affiliatePct;
+    document.getElementById('edit-return').value = inp.returnRate;
+    document.getElementById('edit-weight').value = inp.weight || 'Under 0.5 kg (£2.57)';
+    editPillActive('epill-category', inp.category);
+    editPillActive('epill-fulfilment', inp.fulfilment);
+    editPillActive('epill-seller', inp.seller);
+    editPillActive('epill-shipping', inp.shippingPayer);
+    editPillActive('epill-packaging', inp.packaging);
+    editPillActive('epill-vat', inp.vatReg);
+  }
+  if (margins) {
+    ['em1','em2','em3','em4'].forEach((id, i) => {
+      document.getElementById(id).value = margins[i];
+    });
+  }
+
+  document.getElementById('edit-modal-title').textContent = titleText;
+  document.getElementById('edit-modal-badge').textContent = badgeText;
+  document.getElementById('edit-overlay').classList.remove('hidden');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-overlay').classList.add('hidden');
+  _editCtx = null;
+}
+
+function saveEdit() {
+  if (!_editCtx) return;
+  const { type, idx, varIdx } = _editCtx;
+
+  if (type === 'group') {
+    // only updating group name
+    products[idx].name = document.getElementById('edit-name').value.trim() || products[idx].name;
+    scheduleSave(); renderTable(); closeEditModal(); return;
+  }
+
+  const newInp = {
+    cost:          parseFloat(document.getElementById('edit-cost').value) || 0,
+    affiliatePct:  parseFloat(document.getElementById('edit-affiliate').value) || 0,
+    returnRate:    parseFloat(document.getElementById('edit-return').value) || 0,
+    weight:        document.getElementById('edit-weight').value,
+    category:      getEditPill('epill-category'),
+    seller:        getEditPill('epill-seller'),
+    fulfilment:    getEditPill('epill-fulfilment'),
+    shippingPayer: getEditPill('epill-shipping'),
+    packaging:     getEditPill('epill-packaging'),
+    vatReg:        getEditPill('epill-vat')
+  };
+  if (!newInp.cost || newInp.cost <= 0) { alert('Cost Price must be greater than 0.'); return; }
+
+  const newMargins = [
+    parseFloat(document.getElementById('em1').value) || 10,
+    parseFloat(document.getElementById('em2').value) || 15,
+    parseFloat(document.getElementById('em3').value) || 20,
+    parseFloat(document.getElementById('em4').value) || 25
+  ];
+  const newScenarios = newMargins.map((m, i) => ({
+    label: SC_LABELS[i], marginPct: m, res: calcProduct({ ...newInp, marginPct: m })
+  }));
+
+  if (type === 'variation') {
+    const v = products[idx].variations[varIdx];
+    v.varName = document.getElementById('edit-varname').value.trim() || v.varName;
+    v.inp = newInp;
+    v.scenarios = newScenarios;
+  } else {
+    const p = products[idx];
+    p.name = document.getElementById('edit-name').value.trim() || p.name;
+    p.inp = newInp;
+    p.scenarios = newScenarios;
+  }
+
+  scheduleSave();
+  renderTable();
+  closeEditModal();
 }
 
 function clearAll() {
