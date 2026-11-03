@@ -563,6 +563,130 @@ tbody td.product-name {
   color: var(--fg);
 }
 
+/* ── Pack variation group styles ── */
+.group-header-row td {
+  background: var(--surface2);
+  font-weight: 700;
+  padding: 8px 12px;
+  border-top: 2px solid var(--accent);
+  border-bottom: 1px solid var(--border);
+}
+.group-collapse-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  width: 20px; height: 20px;
+  cursor: pointer;
+  color: var(--fg3);
+  font-size: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 6px;
+  transition: all 0.15s;
+  vertical-align: middle;
+}
+.group-collapse-btn:hover { border-color: var(--accent); color: var(--accent); }
+.group-name-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg);
+  vertical-align: middle;
+}
+.group-pack-count {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--fg3);
+  background: var(--border);
+  border-radius: 10px;
+  padding: 2px 8px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.variation-row td {
+  padding-left: 32px !important;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.variation-row.last-variation td {
+  border-bottom: 2px solid var(--border);
+}
+.variation-name-cell {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--fg2);
+  padding-left: 32px !important;
+  white-space: nowrap;
+}
+.variation-indent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.variation-indent::before {
+  content: '└';
+  color: var(--fg3);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.var-label {
+  background: var(--accent-pale);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+/* ── Pack variation toggle in left panel ── */
+.variation-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.variation-toggle-wrap label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+#variation-opts {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--accent-pale);
+  border: 1.5px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#variation-opts label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg2);
+  display: block;
+  margin-bottom: 4px;
+}
+#inp-group-select, #inp-variation-name {
+  font-family: var(--sans);
+  font-size: 13px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg);
+  padding: 7px 10px;
+  width: 100%;
+  outline: none;
+}
+#inp-group-select:focus, #inp-variation-name:focus { border-color: var(--accent); }
+
 /* ── Feedback button pulse animation ── */
 @keyframes feedback-glow {
   0%, 100% { box-shadow: 0 0 0 0 rgba(255,45,85,0.5); border-color: rgba(255,45,85,0.6); }
@@ -856,6 +980,33 @@ tbody td.product-name {
           <label>Cost Price (£)</label>
           <input type="number" id="inp-cost" placeholder="0.00" min="0" step="0.01">
         </div>
+
+        <!-- Pack variation toggle -->
+        <div>
+          <div class="variation-toggle-wrap">
+            <label for="chk-is-variation">
+              <input type="checkbox" id="chk-is-variation" onchange="toggleVariationMode()">
+              Add as pack variation to a group
+            </label>
+          </div>
+          <div id="variation-opts" style="display:none">
+            <div>
+              <label>Add to group</label>
+              <select id="inp-group-select">
+                <option value="__new__">＋ Create new group…</option>
+              </select>
+            </div>
+            <div id="new-group-name-wrap">
+              <label>Group / Product Name</label>
+              <input type="text" id="inp-group-name" placeholder="e.g. COSRX Snail Serum">
+            </div>
+            <div>
+              <label>Pack / Variation Name</label>
+              <input type="text" id="inp-variation-name" placeholder="e.g. Pack of 3">
+            </div>
+          </div>
+        </div>
+
         <div>
           <label style="font-size:11px;font-weight:600;color:var(--fg2);display:block;margin-bottom:6px">Target Margins — 4 Scenarios</label>
           <div class="margins-grid">
@@ -1208,6 +1359,14 @@ async function onUserSignedIn(user) {
   }
 }
 
+// ── Backward compat: migrate old-format products (no 'type' field) ──
+function migrateProducts() {
+  products = products.map(p => {
+    if (!p.type) return { ...p, type: 'standalone' };
+    return p;
+  });
+}
+
 // ── Supabase DB operations ──
 // Table: user_products (id uuid pk, user_id uuid, data jsonb, updated_at timestamptz)
 // We store ALL products as one JSON blob per user for simplicity.
@@ -1224,6 +1383,7 @@ async function loadFromSupabase() {
     if (error) { console.warn('Load error:', error); return false; }
     if (data && data.data && Array.isArray(data.data)) {
       products = data.data;
+      migrateProducts();
       srCounter = data.sr_counter || (products.length + 1);
       return true;
     }
@@ -1317,6 +1477,7 @@ function loadLocal() {
     const d = JSON.parse(raw);
     if (d && Array.isArray(d.products)) {
       products = d.products;
+      migrateProducts();
       srCounter = d.srCounter || (products.length + 1);
       return products.length > 0;
     }
@@ -1350,6 +1511,9 @@ function toggleShippingPayer() {
   document.getElementById('buyer-shipping-note').style.display =
     payer === 'Buyer' ? 'block' : 'none';
 }
+
+// Group select onchange — show/hide new group name field
+document.getElementById('inp-group-select').addEventListener('change', updateNewGroupNameVisibility);
 
 function getActive(groupId) {
   const active = document.querySelector(`#${groupId} .pill.active`);
@@ -1413,9 +1577,41 @@ function calcProduct(inp) {
   return { commRate, sellPrice, breakEven, commission, affiliateFee, payment: A.payment, fulFee, sbsFee, pkgCost, retProv, totalFees, netProfit, netMargin };
 }
 
+// ── Variation mode toggle ──
+function toggleVariationMode() {
+  const isVar = document.getElementById('chk-is-variation').checked;
+  document.getElementById('variation-opts').style.display = isVar ? 'flex' : 'none';
+  if (isVar) {
+    refreshGroupDropdown();
+    updateNewGroupNameVisibility();
+    // hide standalone name field label hint
+    document.querySelector('label[for=""] , .field label').textContent;
+  }
+}
+
+function refreshGroupDropdown() {
+  const sel = document.getElementById('inp-group-select');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="__new__">＋ Create new group…</option>';
+  products.filter(p => p.type === 'group').forEach(g => {
+    const opt = document.createElement('option');
+    opt.value = g.id;
+    opt.textContent = g.name;
+    sel.appendChild(opt);
+  });
+  if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+  updateNewGroupNameVisibility();
+}
+
+function updateNewGroupNameVisibility() {
+  const sel = document.getElementById('inp-group-select');
+  document.getElementById('new-group-name-wrap').style.display =
+    sel.value === '__new__' ? 'block' : 'none';
+}
+
 // ── Add product — 4 margin scenarios ──
 function addProduct() {
-  const name      = document.getElementById('inp-name').value.trim() || 'Product ' + srCounter;
+  const isVariation = document.getElementById('chk-is-variation').checked;
   const cost      = parseFloat(document.getElementById('inp-cost').value) || 0;
   const affiliate = parseFloat(document.getElementById('inp-affiliate').value) || 0;
   const returnPct = parseFloat(document.getElementById('inp-return').value) || 0;
@@ -1449,8 +1645,38 @@ function addProduct() {
     res: calcProduct({ ...baseInp, marginPct: m })
   }));
 
-  products.push({ sr: srCounter++, name, inp: baseInp, scenarios });
-  scheduleSave();       // ← auto-save (local + cloud)
+  if (isVariation) {
+    // ── Add as pack variation inside a group ──
+    const groupSel    = document.getElementById('inp-group-select').value;
+    const varName     = document.getElementById('inp-variation-name').value.trim() || 'Pack ' + srCounter;
+    const isNewGroup  = groupSel === '__new__';
+    const groupName   = isNewGroup
+      ? (document.getElementById('inp-group-name').value.trim() || document.getElementById('inp-name').value.trim() || 'Group ' + srCounter)
+      : '';
+
+    const variation = { varName, sr: srCounter++, inp: baseInp, scenarios };
+
+    if (isNewGroup) {
+      if (!groupName) { alert('Please enter a Group / Product Name.'); return; }
+      products.push({
+        type: 'group',
+        id: 'g_' + Date.now(),
+        name: groupName,
+        collapsed: false,
+        variations: [variation]
+      });
+    } else {
+      const grp = products.find(p => p.type === 'group' && p.id === groupSel);
+      if (!grp) { alert('Group not found. Please refresh and try again.'); return; }
+      grp.variations.push(variation);
+    }
+  } else {
+    // ── Add as standalone product (original behaviour) ──
+    const name = document.getElementById('inp-name').value.trim() || 'Product ' + srCounter;
+    products.push({ type: 'standalone', sr: srCounter++, name, inp: baseInp, scenarios });
+  }
+
+  scheduleSave();
   renderTable();
 }
 
@@ -1466,37 +1692,27 @@ function renderTable() {
     empty.style.display = 'block';
     summary.style.display = 'none';
     document.getElementById('prod-count').textContent = '0 products';
+    // refresh group dropdown in case user is in variation mode
+    if (document.getElementById('chk-is-variation').checked) refreshGroupDropdown();
     return;
   }
 
   empty.style.display = 'none';
   summary.style.display = 'grid';
-  document.getElementById('prod-count').textContent = products.length + ' product' + (products.length > 1 ? 's' : '');
 
-  products.forEach((p, idx) => {
-    const i = p.inp;
-    const fulBadge = i.fulfilment.includes('SVP') ? 'svp' : i.fulfilment.includes('FBT') ? 'fbt' : 'sbs';
-    const fulShort = i.fulfilment.includes('SVP') ? 'SVP' : i.fulfilment.includes('FBT') ? 'FBT' : 'SBS';
-    const r0 = p.scenarios[0].res;
+  // Count total "leaf" entries for the header count
+  let totalLeafCount = 0;
+  products.forEach(p => {
+    if (p.type === 'group') totalLeafCount += p.variations.length;
+    else totalLeafCount++;
+  });
+  document.getElementById('prod-count').textContent = totalLeafCount + ' product' + (totalLeafCount > 1 ? 's' : '');
 
-    const groupTr = document.createElement('tr');
-    groupTr.className = 'product-group-row';
-    groupTr.innerHTML = `
-      <td class="sr-num">${p.sr}</td>
-      <td colspan="3" class="product-group-label">
-        <strong>${p.name}</strong>
-        <span class="badge badge-${fulBadge}" style="margin-left:8px">${fulShort}</span>
-      </td>
-      <td class="num">£${fmt(i.cost)}</td>
-      <td class="num">${(r0.commRate*100).toFixed(0)}%</td>
-      <td class="num">—</td>
-      <td colspan="5"></td>
-      <td colspan="2"><div class="row-actions"><button class="row-del" onclick="deleteRow(${idx})">✕</button></div></td>
-    `;
-    tbody.appendChild(groupTr);
-
-    p.scenarios.forEach((sc, si) => {
+  // Helper: render 4 scenario rows for an item (standalone or variation)
+  function renderScenarioRows(inp, scenarios, opts = {}) {
+    scenarios.forEach((sc, si) => {
       const r = sc.res;
+      const i = inp;
       const profit = r.netProfit;
       const margin = r.netMargin * 100;
       const status = profit > 0 && margin >= 15 ? '✅ Good'
@@ -1505,11 +1721,14 @@ function renderTable() {
       const statusClass = profit > 0 && margin >= 15 ? 'profit' : profit > 0 ? 'warn' : 'loss';
 
       const tr = document.createElement('tr');
+      if (opts.isVariation) {
+        tr.className = 'variation-row' + (opts.isLast && si === 3 ? ' last-variation' : '');
+      }
       tr.innerHTML = `
-        <td></td>
-        <td></td>
-        <td></td>
-        <td></td>
+        <td class="sr-num">${opts.sr || ''}</td>
+        <td${opts.isVariation ? ' class="variation-name-cell"' : ''}>${si === 0 ? (opts.nameCellHtml || '') : ''}</td>
+        <td>${si === 0 && !opts.isVariation ? (() => { const fulBadge = i.fulfilment.includes('SVP') ? 'svp' : i.fulfilment.includes('FBT') ? 'fbt' : 'sbs'; const fulShort = i.fulfilment.includes('SVP') ? 'SVP' : i.fulfilment.includes('FBT') ? 'FBT' : 'SBS'; return `<span class="badge badge-${fulBadge}">${fulShort}</span>`; })() : ''}</td>
+        <td class="num">${si === 0 ? '£'+fmt(i.cost) : ''}</td>
         <td class="num" style="color:var(--fg3);font-size:11px">£${fmt(r.breakEven)}</td>
         <td class="num">${(r.commRate*100).toFixed(0)}%</td>
         <td class="num">£${fmt(r.totalFees)}</td>
@@ -1525,34 +1744,223 @@ function renderTable() {
         <td class="num" data-tip="Return rate × commission × 20% refund admin">${r.retProv > 0 ? '£'+fmt(r.retProv) : '<span style="color:var(--fg3)">—</span>'}</td>
         <td class="num" style="font-weight:700;color:var(--${profit>=0?'green':'red'})">£${fmt(profit)}</td>
         <td><span class="badge badge-${statusClass}">${status}</span></td>
-        <td></td>
+        <td>${si === 0 && opts.deleteBtnHtml ? opts.deleteBtnHtml : ''}</td>
       `;
       tbody.appendChild(tr);
     });
+  }
+
+  products.forEach((p, idx) => {
+    if (p.type === 'group') {
+      // ── Group header row ──
+      const groupTr = document.createElement('tr');
+      groupTr.className = 'group-header-row';
+      groupTr.innerHTML = `
+        <td class="sr-num" style="color:var(--accent)">G${idx+1}</td>
+        <td colspan="17">
+          <button class="group-collapse-btn" onclick="toggleGroupCollapse(${idx})" title="${p.collapsed ? 'Expand' : 'Collapse'}">${p.collapsed ? '▶' : '▼'}</button>
+          <span class="group-name-label">${p.name}</span>
+          <span class="group-pack-count">${p.variations.length} pack${p.variations.length !== 1 ? 's' : ''}</span>
+        </td>
+        <td>
+          <div class="row-actions">
+            <button class="row-del" onclick="deleteRow(${idx})" title="Delete group and all variations">✕</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(groupTr);
+
+      if (!p.collapsed) {
+        p.variations.forEach((v, vi) => {
+          const isLast = vi === p.variations.length - 1;
+          const i = v.inp;
+          const fulBadge = i.fulfilment.includes('SVP') ? 'svp' : i.fulfilment.includes('FBT') ? 'fbt' : 'sbs';
+          const fulShort = i.fulfilment.includes('SVP') ? 'SVP' : i.fulfilment.includes('FBT') ? 'FBT' : 'SBS';
+
+          // variation sub-header row (shows var name + fulfilment + cost)
+          const varHeaderTr = document.createElement('tr');
+          varHeaderTr.className = 'variation-row' + (isLast && false ? ' last-variation' : '');
+          varHeaderTr.innerHTML = `
+            <td class="sr-num" style="padding-left:20px;color:var(--fg3)">${v.sr}</td>
+            <td class="variation-name-cell" colspan="2">
+              <div class="variation-indent">
+                <span class="var-label">${v.varName}</span>
+              </div>
+            </td>
+            <td class="num">£${fmt(i.cost)}</td>
+            <td class="num" colspan="5" style="color:var(--fg3);font-size:11px">
+              <span class="badge badge-${fulBadge}">${fulShort}</span>
+              &nbsp;Affiliate ${i.affiliatePct}% · Return ${i.returnRate}%
+            </td>
+            <td colspan="8"></td>
+            <td>
+              <div class="row-actions">
+                <button class="row-del" onclick="deleteVariation(${idx}, ${vi})" title="Delete this variation">✕</button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(varHeaderTr);
+
+          // 4 scenario rows for this variation
+          v.scenarios.forEach((sc, si) => {
+            const r = sc.res;
+            const profit = r.netProfit;
+            const margin = r.netMargin * 100;
+            const statusClass = profit > 0 && margin >= 15 ? 'profit' : profit > 0 ? 'warn' : 'loss';
+            const status = profit > 0 && margin >= 15 ? '✅ Good' : profit > 0 && margin >= 5 ? '⚠️ Tight' : '❌ Loss';
+
+            const tr = document.createElement('tr');
+            tr.className = 'variation-row' + (isLast && si === 3 ? ' last-variation' : '');
+            tr.innerHTML = `
+              <td></td>
+              <td class="variation-name-cell"></td>
+              <td></td>
+              <td></td>
+              <td class="num" style="color:var(--fg3);font-size:11px">£${fmt(r.breakEven)}</td>
+              <td class="num">${(r.commRate*100).toFixed(0)}%</td>
+              <td class="num">£${fmt(r.totalFees)}</td>
+              <td><span class="scenario-badge ${SC_COLORS[si]}">${sc.marginPct}% Margin</span></td>
+              <td class="num" style="color:var(--${margin>=15?'green':margin>=5?'yellow':'red'});font-weight:700">${margin.toFixed(1)}%</td>
+              <td class="num" style="font-weight:700;color:var(--accent)">£${fmt(r.sellPrice)}</td>
+              <td class="num">£${fmt(r.commission)}</td>
+              <td class="num">£${fmt(r.affiliateFee)}</td>
+              <td class="num" data-tip="Payment processing £0.25/order">£${fmt(r.payment)}</td>
+              <td><span class="badge ${i.shippingPayer==='Buyer'?'badge-profit':'badge-svp'}">${i.shippingPayer==='Buyer'?'🛒 Buyer':'📦 Seller'}</span></td>
+              <td class="num">${i.shippingPayer==='Buyer'?'<span style="color:var(--green)">—</span>':'£'+fmt(r.fulFee + r.sbsFee)}</td>
+              <td class="num">${r.pkgCost > 0 ? '£'+fmt(r.pkgCost) : '<span style="color:var(--fg3)">—</span>'}</td>
+              <td class="num" data-tip="Return rate × commission × 20% refund admin">${r.retProv > 0 ? '£'+fmt(r.retProv) : '<span style="color:var(--fg3)">—</span>'}</td>
+              <td class="num" style="font-weight:700;color:var(--${profit>=0?'green':'red'})">£${fmt(profit)}</td>
+              <td><span class="badge badge-${statusClass}">${status}</span></td>
+              <td></td>
+            `;
+            tbody.appendChild(tr);
+          });
+        });
+      }
+    } else {
+      // ── Standalone product (original rendering) ──
+      const p2 = p;
+      const i = p2.inp;
+      const fulBadge = i.fulfilment.includes('SVP') ? 'svp' : i.fulfilment.includes('FBT') ? 'fbt' : 'sbs';
+      const fulShort = i.fulfilment.includes('SVP') ? 'SVP' : i.fulfilment.includes('FBT') ? 'FBT' : 'SBS';
+      const r0 = p2.scenarios[0].res;
+
+      const groupTr = document.createElement('tr');
+      groupTr.className = 'product-group-row';
+      groupTr.innerHTML = `
+        <td class="sr-num">${p2.sr}</td>
+        <td colspan="3" class="product-group-label">
+          <strong>${p2.name}</strong>
+          <span class="badge badge-${fulBadge}" style="margin-left:8px">${fulShort}</span>
+        </td>
+        <td class="num">£${fmt(i.cost)}</td>
+        <td class="num">${(r0.commRate*100).toFixed(0)}%</td>
+        <td class="num">—</td>
+        <td colspan="5"></td>
+        <td colspan="2"><div class="row-actions"><button class="row-del" onclick="deleteRow(${idx})">✕</button></div></td>
+      `;
+      tbody.appendChild(groupTr);
+
+      p2.scenarios.forEach((sc, si) => {
+        const r = sc.res;
+        const profit = r.netProfit;
+        const margin = r.netMargin * 100;
+        const status = profit > 0 && margin >= 15 ? '✅ Good'
+                     : profit > 0 && margin >= 5  ? '⚠️ Tight'
+                     : '❌ Loss';
+        const statusClass = profit > 0 && margin >= 15 ? 'profit' : profit > 0 ? 'warn' : 'loss';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td class="num" style="color:var(--fg3);font-size:11px">£${fmt(r.breakEven)}</td>
+          <td class="num">${(r.commRate*100).toFixed(0)}%</td>
+          <td class="num">£${fmt(r.totalFees)}</td>
+          <td><span class="scenario-badge ${SC_COLORS[si]}">${sc.marginPct}% Margin</span></td>
+          <td class="num" style="color:var(--${margin>=15?'green':margin>=5?'yellow':'red'});font-weight:700">${margin.toFixed(1)}%</td>
+          <td class="num" style="font-weight:700;color:var(--accent)">£${fmt(r.sellPrice)}</td>
+          <td class="num">£${fmt(r.commission)}</td>
+          <td class="num">£${fmt(r.affiliateFee)}</td>
+          <td class="num" data-tip="Payment processing £0.25/order">£${fmt(r.payment)}</td>
+          <td><span class="badge ${i.shippingPayer==='Buyer'?'badge-profit':'badge-svp'}">${i.shippingPayer==='Buyer'?'🛒 Buyer':'📦 Seller'}</span></td>
+          <td class="num">${i.shippingPayer==='Buyer'?'<span style="color:var(--green)">—</span>':'£'+fmt(r.fulFee + r.sbsFee)}</td>
+          <td class="num">${r.pkgCost > 0 ? '£'+fmt(r.pkgCost) : '<span style="color:var(--fg3)">—</span>'}</td>
+          <td class="num" data-tip="Return rate × commission × 20% refund admin">${r.retProv > 0 ? '£'+fmt(r.retProv) : '<span style="color:var(--fg3)">—</span>'}</td>
+          <td class="num" style="font-weight:700;color:var(--${profit>=0?'green':'red'})">£${fmt(profit)}</td>
+          <td><span class="badge badge-${statusClass}">${status}</span></td>
+          <td></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
   });
 
-  const bestScenarios = products.map(p => p.scenarios[p.scenarios.length - 1].res);
-  const totalProfit = bestScenarios.reduce((s, r) => s + r.netProfit, 0);
-  const avgSell     = bestScenarios.reduce((s, r) => s + r.sellPrice, 0) / products.length;
-  const avgMargin   = bestScenarios.reduce((s, r) => s + r.netMargin, 0) / products.length * 100;
+  // ── Summary footer: aggregate all leaf products (best scenario each) ──
+  const allLeafBest = [];
+  products.forEach(p => {
+    if (p.type === 'group') {
+      p.variations.forEach(v => allLeafBest.push(v.scenarios[v.scenarios.length - 1].res));
+    } else {
+      allLeafBest.push(p.scenarios[p.scenarios.length - 1].res);
+    }
+  });
 
-  document.getElementById('sum-count').textContent = products.length;
+  const totalProfit = allLeafBest.reduce((s, r) => s + r.netProfit, 0);
+  const avgSell     = allLeafBest.reduce((s, r) => s + r.sellPrice, 0) / allLeafBest.length;
+  const avgMargin   = allLeafBest.reduce((s, r) => s + r.netMargin, 0) / allLeafBest.length * 100;
+
+  document.getElementById('sum-count').textContent = totalLeafCount;
   document.getElementById('sum-avg-sell').textContent = '£' + fmt(avgSell);
   document.getElementById('sum-avg-margin').textContent = avgMargin.toFixed(1) + '%';
   const tp = document.getElementById('sum-total-profit');
   tp.textContent = '£' + fmt(totalProfit);
   tp.className = 's-value ' + (totalProfit >= 0 ? 'good' : 'bad');
+
+  // refresh group dropdown if variation mode is on
+  if (document.getElementById('chk-is-variation').checked) refreshGroupDropdown();
 }
 
 function deleteRow(idx) {
+  if (products[idx] && products[idx].type === 'group') {
+    const grp = products[idx];
+    if (!confirm(`Delete group "${grp.name}" and all ${grp.variations.length} variation(s)?`)) return;
+  }
   products.splice(idx, 1);
   scheduleSave();
   renderTable();
 }
 
+function deleteVariation(groupIdx, varIdx) {
+  const grp = products[groupIdx];
+  if (!grp || grp.type !== 'group') return;
+  if (grp.variations.length === 1) {
+    if (confirm(`This is the last variation. Delete the entire group "${grp.name}"?`)) {
+      products.splice(groupIdx, 1);
+    }
+  } else {
+    grp.variations.splice(varIdx, 1);
+  }
+  scheduleSave();
+  renderTable();
+}
+
+function toggleGroupCollapse(idx) {
+  const grp = products[idx];
+  if (grp && grp.type === 'group') {
+    grp.collapsed = !grp.collapsed;
+    scheduleSave();
+    renderTable();
+  }
+}
+
 function clearAll() {
   if (products.length === 0) return;
-  if (confirm('Clear all ' + products.length + ' product(s)?')) {
+  let leafCount = 0;
+  products.forEach(p => { if (p.type === 'group') leafCount += p.variations.length; else leafCount++; });
+  if (confirm('Clear all ' + leafCount + ' product(s)?')) {
     products = [];
     srCounter = 1;
     scheduleSave();
@@ -1565,6 +1973,11 @@ function resetForm() {
   document.getElementById('inp-cost').value = '';
   document.getElementById('inp-affiliate').value = '10';
   document.getElementById('inp-return').value = '5';
+  // Reset variation mode
+  const chk = document.getElementById('chk-is-variation');
+  if (chk.checked) { chk.checked = false; toggleVariationMode(); }
+  document.getElementById('inp-variation-name').value = '';
+  document.getElementById('inp-group-name').value = '';
   ['pill-category','pill-seller','pill-fulfilment','pill-packaging','pill-vat','pill-shipping-payer'].forEach(id => {
     const g = document.getElementById(id);
     g.querySelectorAll('.pill').forEach((p,i) => p.classList.toggle('active', i===0));
@@ -1578,15 +1991,26 @@ function fmt(n) { return (isNaN(n) ? 0 : n).toFixed(2); }
 // ── Export CSV ──
 function exportCSV() {
   if (products.length === 0) { alert('No products to export.'); return; }
-  const headers = ['Sr#','Product Name','Fulfilment','Cost £','Scenario','Target Margin %','Sell Price £','Break-Even £','Comm %','Commission £','Affiliate £','Shipping £','Total Fees £','Net Profit £','Net Margin %','Status'];
+  const headers = ['Sr#','Group','Product Name','Pack / Variation','Fulfilment','Cost £','Scenario','Target Margin %','Sell Price £','Break-Even £','Comm %','Commission £','Affiliate £','Shipping £','Total Fees £','Net Profit £','Net Margin %','Status'];
   const rows = [];
   products.forEach(p => {
-    p.scenarios.forEach((sc, si) => {
-      const r = sc.res; const i = p.inp;
-      const margin = (r.netMargin*100).toFixed(1);
-      const status = r.netProfit>0&&r.netMargin*100>=15?'Good':r.netProfit>0?'Tight':'Loss';
-      rows.push([p.sr, `"${p.name}"`, `"${i.fulfilment}"`, fmt(i.cost), SC_LABELS[si], sc.marginPct+'%', fmt(r.sellPrice), fmt(r.breakEven), (r.commRate*100).toFixed(0)+'%', fmt(r.commission), fmt(r.affiliateFee), fmt(r.fulFee+r.sbsFee), fmt(r.totalFees), fmt(r.netProfit), margin+'%', status]);
-    });
+    if (p.type === 'group') {
+      p.variations.forEach(v => {
+        v.scenarios.forEach((sc, si) => {
+          const r = sc.res; const i = v.inp;
+          const margin = (r.netMargin*100).toFixed(1);
+          const status = r.netProfit>0&&r.netMargin*100>=15?'Good':r.netProfit>0?'Tight':'Loss';
+          rows.push([v.sr, `"${p.name}"`, `"${p.name}"`, `"${v.varName}"`, `"${i.fulfilment}"`, fmt(i.cost), SC_LABELS[si], sc.marginPct+'%', fmt(r.sellPrice), fmt(r.breakEven), (r.commRate*100).toFixed(0)+'%', fmt(r.commission), fmt(r.affiliateFee), fmt(r.fulFee+r.sbsFee), fmt(r.totalFees), fmt(r.netProfit), margin+'%', status]);
+        });
+      });
+    } else {
+      p.scenarios.forEach((sc, si) => {
+        const r = sc.res; const i = p.inp;
+        const margin = (r.netMargin*100).toFixed(1);
+        const status = r.netProfit>0&&r.netMargin*100>=15?'Good':r.netProfit>0?'Tight':'Loss';
+        rows.push([p.sr, '', `"${p.name}"`, '', `"${i.fulfilment}"`, fmt(i.cost), SC_LABELS[si], sc.marginPct+'%', fmt(r.sellPrice), fmt(r.breakEven), (r.commRate*100).toFixed(0)+'%', fmt(r.commission), fmt(r.affiliateFee), fmt(r.fulFee+r.sbsFee), fmt(r.totalFees), fmt(r.netProfit), margin+'%', status]);
+      });
+    }
   });
   const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
   const a = document.createElement('a');
@@ -1643,6 +2067,9 @@ function loadExampleProduct() {
   document.getElementById('m4').value = '25';
   const catG = document.getElementById('pill-category');
   catG.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.val.includes('Beauty')));
+  // ensure not in variation mode for example
+  const chk = document.getElementById('chk-is-variation');
+  if (chk.checked) { chk.checked = false; toggleVariationMode(); }
   addProduct();
   resetForm();
 }
